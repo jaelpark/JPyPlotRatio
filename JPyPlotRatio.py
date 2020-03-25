@@ -1,8 +1,14 @@
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
+
+import scipy
+from scipy import interpolate
+
 import ROOT
+matplotlib.rcParams["axes.linewidth"] = 1.5;
 
 def TGraphErrorsToNumpy(gr):
 	n = gr.GetN();
@@ -19,34 +25,23 @@ def TGraphErrorsToNumpy(gr):
 
 	return x,y,xerr,yerr;
 
-def loopOn(input):
-	if isinstance(input,list):
-		for i in input:
-			yield i;
-	else: yield input;
-
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, panelScaling={}, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, panelScaling={}, panelLabel = {}, **kwargs):
 		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex=True,figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
 		self.plots = [];
 		self.ratios = [];
+		self.usedSet = set(); #set of plot indices where something has been drawn
 
 		self.panelScaling = panelScaling;
+		self.panelLabel = panelLabel;
 		self.rowBounds = rowBounds;
 
 		try:
 			self.ax.flat[0].set_xlim(kwargs['xlim']);
 		except KeyError:
 			pass;
-
-		#try:
-		#	#set y-limits for the rows
-		#	for a,lim in zip(self.ax[:,0],loopOn(kwargs['ylim'])):
-		#		a.set_ylim(lim);
-		#except KeyError:
-		#	pass;
 
 		try:
 			for a in self.ax[-1,1:]:
@@ -73,12 +68,14 @@ class JPyPlotRatio:
 	
 	def Add(self, plotIndex, arrays, **kwargs):
 		self.plots.append((plotIndex,arrays,kwargs));
+		self.usedSet.add(plotIndex);
 
 		return len(self.plots)-1; #handle to the plot, given to the Ratio()
 	
 	def AddTGraph(self, plotIndex, gr, **kwargs):
-		arrays = TGraphErrorsToNumpy(gr);
-		return self.Add(plotIndex,arrays,**kwargs);
+		#arrays = TGraphErrorsToNumpy(gr);
+		x,y,_,yerr = TGraphErrorsToNumpy(gr);
+		return self.Add(plotIndex,(x,y,yerr),**kwargs);
 	
 	def Ratio(self, r1, r2):
 		self.ratios.append((r1,r2));
@@ -88,7 +85,8 @@ class JPyPlotRatio:
 		s = np.shape(self.ax);
 		A = np.arange(s[0]*s[1]).reshape(s);
 		A = np.delete(A,0,1); #delete control column
-		a0 = np.delete(A,2*np.arange(s[1])+1,0).reshape(-1); #plot indices
+		A0 = np.delete(A,2*np.arange(s[1])+1,0);
+		a0 = A0.reshape(-1); #plot indices
 		a1 = np.delete(A,2*np.arange(s[1]),0).reshape(-1); #ratio indices
 		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1));
 
@@ -96,26 +94,38 @@ class JPyPlotRatio:
 		for plot in self.plots:
 			self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[2]);
 			
-		for i,a in enumerate(self.ax[:,0]):
+		for i,ra0n in enumerate(A0[:,]):
 			try:
-				a.set_ylim(rowBounds[i]);
+				self.ax[2*i,0].set_ylim(rowBounds[i]);
 			except:
 				bounds = (1e6,-1e6);
-				for aa in self.ax[i,1:]:
-					ylim0 = aa.get_ylim();
+				for ra0,rap in zip(ra0n,ap[(s[1]-1)*i:]):
+					if rap not in self.usedSet:
+						continue;
+					ylim0 = self.ax.flat[ra0].get_ylim();
 					bounds = (min(bounds[0],ylim0[0]),max(bounds[1],ylim0[1]));
-				a.set_ylim(bounds);
+				self.ax[2*i,0].set_ylim(bounds);
 
 		#plot the ratios
 		for robj in self.ratios:
-			x1,y1,_,yerr1 = self.plots[robj[0]][1];
-			x2,y2,_,yerr2 = self.plots[robj[1]][1];
+			x1,y1,yerr1 = self.plots[robj[0]][1];
+			x2,y2,yerr2 = self.plots[robj[1]][1];
 
-			ratio = y1/y2;
-			ratio_err = ratio*np.sqrt((yerr2/y2)**2+(yerr1/y1)**2);
+			sa = max(x1[0],x2[0]);
+			sb = min(x1[-1],x2[-1]);
+			sx = np.linspace(sa,sb,1000);
+
+			y1d = interpolate.interp1d(x1,y1,bounds_error=False,fill_value="extrapolate")(sx);
+			yerr1d = interpolate.interp1d(x1,yerr1,bounds_error=False,fill_value="extrapolate")(sx);
+			y2d = interpolate.interp1d(x2,y2,bounds_error=False,fill_value="extrapolate")(sx);
+			yerr2d = interpolate.interp1d(x2,yerr2,bounds_error=False,fill_value="extrapolate")(sx);
+
+			ratio = y1d/y2d;
+			ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
 
 			plotIndex = self.plots[robj[0]][0];
-			self.ax.flat[a1[plotIndex]].errorbar(x1,ratio,ratio_err,**self.plots[robj[1]][2]);
+			self.ax.flat[a1[plotIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,color=self.plots[robj[1]][2]["color"],alpha=0.5);
+			self.ax.flat[a1[plotIndex]].plot(sx,ratio,linestyle="-",color=self.plots[robj[1]][2]["color"]);
 
 		#adjust ticks
 		for ra0,ra1,rap in zip(a0,a1,ap):
@@ -126,8 +136,15 @@ class JPyPlotRatio:
 			try:
 				(_a1,_b1) = self.panelScaling[rap],0.0;
 				self.ax.flat[ra0].set_ylim((ylim1[0]-_b1)/_a1,(ylim1[1]-_b1)/_a1);
+				self.ax.flat[ra0].text(0.92,0.92,"$\\mathdefault{{(\\times {a:.1f})}}$"
+					.format(a=_a1),horizontalalignment="right",verticalalignment="center",transform=self.ax.flat[ra0].transAxes,size=10);
 			except KeyError:
 				self.ax.flat[ra0].set_ylim(ylim1);
+
+			try:
+				self.ax.flat[ra0].text(0.2,0.92,self.panelLabel[rap],horizontalalignment="right",verticalalignment="center",transform=self.ax.flat[ra0].transAxes,size=16);
+			except KeyError:
+				pass;
 
 			ylim0 = self.ax.flat[ra0].get_ylim();
 
@@ -141,13 +158,16 @@ class JPyPlotRatio:
 			plt.setp(self.ax.flat[ra0].get_yticklabels(),visible=False);
 			plt.setp(self.ax.flat[ra1].get_yticklabels(),visible=False);
 
+			xl = self.ax.flat[ra1].get_xlim();
+			xs = xl[1]-xl[0];
+			self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],[1,1],color="gray",linestyle="--",alpha=0.5);
+
 		#hide ticks from the control plot
 		for a in self.ax[:,0]:
 			plt.setp(a.get_xticklabels(),visible=False);
-
-		xl = self.ax.flat[a1[0]].get_xlim();
-		xs = xl[1]-xl[0];
-		self.ax.flat[a1[0]].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],[1,1],color="gray",linestyle="--",alpha=0.5);
+	
+	def Save(self, filename):
+		self.p.savefig(filename,bbox_inches="tight");
 
 	def Show(self):
 		plt.show();
