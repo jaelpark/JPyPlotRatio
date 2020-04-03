@@ -100,8 +100,8 @@ class JPyPlotRatio:
 			
 		for i,ra0n in enumerate(A0[:,]):
 			try:
-				self.ax[2*i,0].set_ylim(rowBounds[i]);
-			except:
+				self.ax[2*i,0].set_ylim(self.rowBounds[i]);
+			except KeyError:
 				bounds = (1e6,-1e6);
 				for ra0,rap in zip(ra0n,ap[(s[1]-1)*i:]):
 					if rap not in self.usedSet:
@@ -111,8 +111,8 @@ class JPyPlotRatio:
 				self.ax[2*i,0].set_ylim(bounds);
 
 			try:
-				self.ax[2*i+1,0].set_ylim(ratioBounds[i]);
-			except:
+				self.ax[2*i+1,0].set_ylim(self.ratioBounds[i]);
+			except KeyError:
 				self.ax[2*i+1,0].set_ylim([0.5,1.5]);
 
 		#plot the ratios
