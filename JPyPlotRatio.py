@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
+import matplotlib.container as container
 
 import scipy
 from scipy import interpolate
@@ -26,7 +27,7 @@ def TGraphErrorsToNumpy(gr):
 	return x,y,xerr,yerr;
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, panelScaling={}, panelLabel = {}, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, ratioBounds = {}, panelScaling={}, panelLabel = {}, **kwargs):
 		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex=True,figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
@@ -37,6 +38,7 @@ class JPyPlotRatio:
 		self.panelScaling = panelScaling;
 		self.panelLabel = panelLabel;
 		self.rowBounds = rowBounds;
+		self.ratioBounds = ratioBounds;
 
 		try:
 			self.ax.flat[0].set_xlim(kwargs['xlim']);
@@ -66,16 +68,16 @@ class JPyPlotRatio:
 			A.xaxis.set_tick_params(labelsize=13);
 			A.yaxis.set_tick_params(labelsize=13);
 	
-	def Add(self, plotIndex, arrays, **kwargs):
-		self.plots.append((plotIndex,arrays,kwargs));
+	def Add(self, plotIndex, arrays, label="", **kwargs):
+		self.plots.append((plotIndex,arrays,label,kwargs));
 		self.usedSet.add(plotIndex);
 
 		return len(self.plots)-1; #handle to the plot, given to the Ratio()
 	
-	def AddTGraph(self, plotIndex, gr, **kwargs):
+	def AddTGraph(self, plotIndex, gr, label="", **kwargs):
 		#arrays = TGraphErrorsToNumpy(gr);
 		x,y,_,yerr = TGraphErrorsToNumpy(gr);
-		return self.Add(plotIndex,(x,y,yerr),**kwargs);
+		return self.Add(plotIndex,(x,y,yerr),label,**kwargs);
 	
 	def Ratio(self, r1, r2):
 		self.ratios.append((r1,r2));
@@ -90,9 +92,11 @@ class JPyPlotRatio:
 		a1 = np.delete(A,2*np.arange(s[1]),0).reshape(-1); #ratio indices
 		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1));
 
+		labels = {};
+
 		#plot the data
 		for plot in self.plots:
-			self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[2]);
+			labels[plot[2]] = self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[3]);
 			
 		for i,ra0n in enumerate(A0[:,]):
 			try:
@@ -105,6 +109,11 @@ class JPyPlotRatio:
 					ylim0 = self.ax.flat[ra0].get_ylim();
 					bounds = (min(bounds[0],ylim0[0]),max(bounds[1],ylim0[1]));
 				self.ax[2*i,0].set_ylim(bounds);
+
+			try:
+				self.ax[2*i+1,0].set_ylim(ratioBounds[i]);
+			except:
+				self.ax[2*i+1,0].set_ylim([0.5,1.5]);
 
 		#plot the ratios
 		for robj in self.ratios:
@@ -124,8 +133,8 @@ class JPyPlotRatio:
 			ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
 
 			plotIndex = self.plots[robj[0]][0];
-			self.ax.flat[a1[plotIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,color=self.plots[robj[1]][2]["color"],alpha=0.5);
-			self.ax.flat[a1[plotIndex]].plot(sx,ratio,linestyle="-",color=self.plots[robj[1]][2]["color"]);
+			self.ax.flat[a1[plotIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,color=self.plots[robj[1]][3]["color"],alpha=0.5);
+			self.ax.flat[a1[plotIndex]].plot(sx,ratio,linestyle="-",color=self.plots[robj[1]][3]["color"]);
 
 		#adjust ticks
 		for ra0,ra1,rap in zip(a0,a1,ap):
@@ -162,9 +171,18 @@ class JPyPlotRatio:
 			xs = xl[1]-xl[0];
 			self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],[1,1],color="gray",linestyle="--",alpha=0.5);
 
+			ij = np.unravel_index(ra1,s);
+
+			ylim1 = self.ax[ij[0],0].get_ylim();
+			self.ax.flat[ra1].set_ylim(ylim1);
+
 		#hide ticks from the control plot
 		for a in self.ax[:,0]:
 			plt.setp(a.get_xticklabels(),visible=False);
+
+		lines = [labels[p] for p in labels];
+		lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
+		self.ax[0,1].legend(lines,labels,frameon=False,prop={'size':10},loc="center",handletextpad=0.1,bbox_to_anchor=(0.52,0.28));
 	
 	def Save(self, filename):
 		self.p.savefig(filename,bbox_inches="tight");
