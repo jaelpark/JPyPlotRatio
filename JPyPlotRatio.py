@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import matplotlib.ticker as plticker
 import matplotlib.container as container
 
@@ -26,12 +27,17 @@ def TGraphErrorsToNumpy(gr):
 
 	return x,y,xerr,yerr;
 
+def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
+	h = 0.5*s;
+	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
+
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, ratioBounds = {}, panelScaling={}, panelLabel = {}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, ratioBounds = {}, panelScaling={}, panelLabel = {}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", legendLoc=(0.52,0.28), legendSize=10, systPatchWidth=5, **kwargs):
 		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex=True,figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
 		self.plots = [];
+		self.systs = [];
 		self.ratios = [];
 		self.usedSet = set(); #set of plot indices where something has been drawn
 
@@ -44,6 +50,7 @@ class JPyPlotRatio:
 		self.ratioBounds = ratioBounds;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
+		self.systPatchWidth = systPatchWidth;
 
 		try:
 			self.ax.flat[0].set_xlim(kwargs['xlim']);
@@ -84,6 +91,9 @@ class JPyPlotRatio:
 		x,y,_,yerr = TGraphErrorsToNumpy(gr);
 		return self.Add(plotIndex,(x,y,yerr),label,plotType,**kwargs);
 	
+	def AddSyst(self, r1, ysys):
+		self.systs.append((r1,ysys));
+	
 	def Ratio(self, r1, r2):
 		self.ratios.append((r1,r2));
 	
@@ -98,6 +108,11 @@ class JPyPlotRatio:
 		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1));
 
 		labels = {};
+
+		for sys in self.systs:
+			x1,y1,yerr1 = self.plots[sys[0]][1];
+			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),self.systPatchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
+				self.ax.flat[a0[self.plots[sys[0]][0]]].add_patch(patch);
 
 		#plot the data
 		for plot in self.plots:
