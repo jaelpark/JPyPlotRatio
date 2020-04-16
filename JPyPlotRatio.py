@@ -32,8 +32,8 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, ratioBounds = {}, panelScaling={}, panelLabel = {}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", legendLoc=(0.52,0.28), legendSize=10, systPatchWidth=5, **kwargs):
-		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex=True,figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, panelScaling={}, panelLabel = {}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", legendLoc=(0.52,0.28), legendSize=10, systPatchWidth=5, **kwargs):
+		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
 		self.plots = [];
@@ -52,10 +52,17 @@ class JPyPlotRatio:
 		self.legendSize = legendSize;
 		self.systPatchWidth = systPatchWidth;
 
-		try:
-			self.ax.flat[0].set_xlim(kwargs['xlim']);
-		except KeyError:
-			pass;
+		self.s = np.shape(self.ax);
+		self.A = np.arange(self.s[0]*self.s[1]).reshape(self.s);
+		self.A = np.delete(self.A,0,1); #delete control column
+		self.A0 = np.delete(self.A,2*np.arange(self.s[1])+1,0);
+		self.a0 = self.A0.reshape(-1); #plot indices
+
+		for i,a in enumerate(self.ax[0,:]):
+			try:
+				a.set_xlim(colBounds[i]);
+			except KeyError:
+				pass;
 
 		try:
 			for a in self.ax[-1,1:]:
@@ -74,8 +81,8 @@ class JPyPlotRatio:
 		for A in self.ax.flat:
 			A.tick_params(which="major",direction="in",length=8.0);
 			A.tick_params(which="minor",direction="in",length=2.8);
-			A.xaxis.set_major_locator(plticker.MultipleLocator(1.0));
-			A.xaxis.set_minor_locator(plticker.AutoMinorLocator(0.5));
+			#A.xaxis.set_major_locator(plticker.MultipleLocator(1.0));
+			#A.xaxis.set_minor_locator(plticker.AutoMinorLocator(0.5));
 			#A.yaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.xaxis.set_tick_params(labelsize=13);
 			A.yaxis.set_tick_params(labelsize=13);
@@ -97,13 +104,15 @@ class JPyPlotRatio:
 	def Ratio(self, r1, r2):
 		self.ratios.append((r1,r2));
 	
+	def GetAxes(self, plotIndex):
+		return self.ax.flat[self.a0[plotIndex]];
+	
 	def Plot(self):
 		#create a matrix of plot indices and remove the control column
-		s = np.shape(self.ax);
-		A = np.arange(s[0]*s[1]).reshape(s);
-		A = np.delete(A,0,1); #delete control column
-		A0 = np.delete(A,2*np.arange(s[1])+1,0);
-		a0 = A0.reshape(-1); #plot indices
+		s = self.s;
+		A = self.A;
+		A0 = self.A0;
+		a0 = self.a0;
 		a1 = np.delete(A,2*np.arange(s[1]),0).reshape(-1); #ratio indices
 		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1));
 
