@@ -21,13 +21,13 @@ ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ra
 panelScaling | Dict `{panelIndex:scale, ...}` | Dictionary of scale factors for the plots in each panel
 xlabel | str or Dict `{colId:str, ...}` | xlabel for all panels (str), or dictionary of xlabels for each column
 ylabel | str | ylabel for all panels
+axisLabelSize | int | Axis label text size. Default 16
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
 panelLabelAlign | str | Text alignment for the panel labels, "left", "center", "right" (default).
 legendLoc | Tuple (x, y) | Legend location in the panel
 legendSize | int | Legend text size. Default 10
-systPatchWidth | float | Width of the systematic uncertainty patches. Default 5.0.
 
 Plot curves with `plot.Add(...)` or `plot.AddTGraph(...)`. `AddTGraph` automatically converts a TGraphErrors object to numpy arrays and plots them.
 

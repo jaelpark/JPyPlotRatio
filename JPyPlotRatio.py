@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", legendLoc=(0.52,0.28), legendSize=10, systPatchWidth=5, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
@@ -48,9 +48,10 @@ class JPyPlotRatio:
 		self.panelLabelAlign = panelLabelAlign;
 		self.rowBounds = rowBounds;
 		self.ratioBounds = ratioBounds;
+		self.axisLabelSize = axisLabelSize;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
-		self.systPatchWidth = systPatchWidth;
+		#self.systPatchWidth = systPatchWidth;
 
 		self.s = np.shape(self.ax);
 		self.A = np.arange(self.s[0]*self.s[1]).reshape(self.s);
@@ -67,11 +68,11 @@ class JPyPlotRatio:
 		try:
 			if isinstance(kwargs['xlabel'],str):
 				for a in self.ax[-1,1:]:
-					a.set_xlabel(kwargs['xlabel'],fontsize=16);
+					a.set_xlabel(kwargs['xlabel'],fontsize=self.axisLabelSize);
 			else:
 				for i,a in enumerate(self.ax[-1,1:]):
 					try:
-						a.set_xlabel(kwargs['xlabel'][i],fontsize=16);
+						a.set_xlabel(kwargs['xlabel'][i],fontsize=self.axisLabelSize);
 					except (KeyError,TypeError):
 						pass;
 		except KeyError:
@@ -125,11 +126,6 @@ class JPyPlotRatio:
 
 		labels = {};
 
-		for sys in self.systs:
-			x1,y1,yerr1 = self.plots[sys[0]][1];
-			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),self.systPatchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
-				self.ax.flat[a0[self.plots[sys[0]][0]]].add_patch(patch);
-
 		#plot the data
 		for plot in self.plots:
 			if plot[3] == "data":
@@ -175,6 +171,7 @@ class JPyPlotRatio:
 
 			m = ~np.isnan(ratio);
 			sx = sx[m];
+			
 			ratio = ratio[m];
 			ratio_err = ratio_err[m];
 
@@ -184,6 +181,14 @@ class JPyPlotRatio:
 			elif self.plots[robj[1]][3] == "theory":
 				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[1]][4]);
 				self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+
+		for sys in self.systs:
+			x1,y1,yerr1 = self.plots[sys[0]][1];
+			ax = self.ax.flat[a0[self.plots[sys[0]][0]]];
+			xlim = ax.get_xlim();
+			patchWidth = 0.1*(xlim[1]-xlim[0]);
+			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
+				ax.add_patch(patch);
 
 		#adjust ticks
 		for ra0,ra1,rap in zip(a0,a1,ap):
