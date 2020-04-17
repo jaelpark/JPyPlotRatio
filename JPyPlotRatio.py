@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, panelScaling={}, panelLabel = {}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", legendLoc=(0.52,0.28), legendSize=10, systPatchWidth=5, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", legendLoc=(0.52,0.28), legendSize=10, systPatchWidth=5, **kwargs):
 		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
@@ -87,16 +87,16 @@ class JPyPlotRatio:
 			A.xaxis.set_tick_params(labelsize=13);
 			A.yaxis.set_tick_params(labelsize=13);
 	
-	def Add(self, plotIndex, arrays, label="", plotType="data", **kwargs):
-		self.plots.append((plotIndex,arrays,label,plotType,kwargs));
-		self.usedSet.add(plotIndex);
+	def Add(self, panelIndex, arrays, label="", plotType="data", **kwargs):
+		self.plots.append((panelIndex,arrays,label,plotType,kwargs));
+		self.usedSet.add(panelIndex);
 
 		return len(self.plots)-1; #handle to the plot, given to the Ratio()
 	
-	def AddTGraph(self, plotIndex, gr, label="", plotType="data", **kwargs):
+	def AddTGraph(self, panelIndex, gr, label="", plotType="data", **kwargs):
 		#arrays = TGraphErrorsToNumpy(gr);
 		x,y,_,yerr = TGraphErrorsToNumpy(gr);
-		return self.Add(plotIndex,(x,y,yerr),label,plotType,**kwargs);
+		return self.Add(panelIndex,(x,y,yerr),label,plotType,**kwargs);
 	
 	def AddSyst(self, r1, ysys):
 		self.systs.append((r1,ysys));
@@ -104,8 +104,8 @@ class JPyPlotRatio:
 	def Ratio(self, r1, r2):
 		self.ratios.append((r1,r2));
 	
-	def GetAxes(self, plotIndex):
-		return self.ax.flat[self.a0[plotIndex]];
+	def GetAxes(self, panelIndex):
+		return self.ax.flat[self.a0[panelIndex]];
 	
 	def Plot(self):
 		#create a matrix of plot indices and remove the control column
@@ -171,12 +171,12 @@ class JPyPlotRatio:
 			ratio = ratio[m];
 			ratio_err = ratio_err[m];
 
-			plotIndex = self.plots[robj[0]][0];
+			panelIndex = self.plots[robj[0]][0];
 			if self.plots[robj[1]][3] == "data":
-				self.ax.flat[a1[plotIndex]].errorbar(sx,ratio,ratio_err,**self.plots[robj[1]][4]);
+				self.ax.flat[a1[panelIndex]].errorbar(sx,ratio,ratio_err,**self.plots[robj[1]][4]);
 			elif self.plots[robj[1]][3] == "theory":
-				p1 = self.ax.flat[a1[plotIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[1]][4]);
-				self.ax.flat[a1[plotIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[1]][4]);
+				self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 
 		#adjust ticks
 		for ra0,ra1,rap in zip(a0,a1,ap):
