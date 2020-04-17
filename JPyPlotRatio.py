@@ -65,8 +65,15 @@ class JPyPlotRatio:
 				pass;
 
 		try:
-			for a in self.ax[-1,1:]:
-				a.set_xlabel(kwargs['xlabel'],fontsize=16);
+			if isinstance(kwargs['xlabel'],str):
+				for a in self.ax[-1,1:]:
+					a.set_xlabel(kwargs['xlabel'],fontsize=16);
+			else:
+				for i,a in enumerate(self.ax[-1,1:]):
+					try:
+						a.set_xlabel(kwargs['xlabel'][i],fontsize=16);
+					except (KeyError,TypeError):
+						pass;
 		except KeyError:
 			pass;
 
