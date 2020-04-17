@@ -20,6 +20,7 @@ colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each col
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
 panelScaling | Dict `{panelIndex:scale, ...}` | Dictionary of scale factors for the plots in each panel
 xlabel | str or Dict `{colId:str, ...}` | xlabel for all panels (str), or dictionary of xlabels for each column
+ylabel | str | ylabel for all panels
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
