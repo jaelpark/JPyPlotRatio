@@ -109,8 +109,8 @@ class JPyPlotRatio:
 	def AddSyst(self, r1, ysys):
 		self.systs.append((r1,ysys));
 	
-	def Ratio(self, r1, r2):
-		self.ratios.append((r1,r2));
+	def Ratio(self, r1, r2, **kwargs):
+		self.ratios.append((r1,r2,kwargs));
 	
 	def GetAxes(self, panelIndex):
 		return self.ax.flat[self.a0[panelIndex]];
@@ -180,10 +180,21 @@ class JPyPlotRatio:
 
 			panelIndex = self.plots[robj[0]][0];
 			if self.plots[robj[1]][3] == "data":
-				self.ax.flat[a1[panelIndex]].errorbar(sx,ratio,ratio_err,**self.plots[robj[1]][4]);
+				ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
+				ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
+
+				self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,ratio_err1d,**self.plots[robj[1]][4]);
 			elif self.plots[robj[1]][3] == "theory":
 				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[1]][4]);
-				self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+				if "style" in robj[2] and robj[2]["style"] == "errorbar":
+					p1.remove();
+
+					ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
+					ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
+
+					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+				else:
+					self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 
 		for sys in self.systs:
 			x1,y1,yerr1 = self.plots[sys[0]][1];
