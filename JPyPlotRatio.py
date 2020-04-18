@@ -59,7 +59,7 @@ class JPyPlotRatio:
 		self.A0 = np.delete(self.A,2*np.arange(self.s[1])+1,0);
 		self.a0 = self.A0.reshape(-1); #plot indices
 
-		for i,a in enumerate(self.ax[0,:]):
+		for i,a in enumerate(self.ax[0,1:]):
 			try:
 				a.set_xlim(colBounds[i]);
 			except KeyError:
@@ -114,6 +114,9 @@ class JPyPlotRatio:
 	
 	def GetAxes(self, panelIndex):
 		return self.ax.flat[self.a0[panelIndex]];
+	
+	def GetPlot(self):
+		return self.p;
 	
 	def Plot(self):
 		#create a matrix of plot indices and remove the control column
