@@ -238,7 +238,7 @@ class JPyPlotRatio:
 			x1,y1,yerr1 = self.plots[sys[0]][1];
 			ax = self.ax.flat[a0[self.plots[sys[0]][0]]];
 			xlim = ax.get_xlim();
-			patchWidth = 0.1*(xlim[1]-xlim[0]);
+			patchWidth = 0.065*(xlim[1]-xlim[0]);
 			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
 				ax.add_patch(patch);
 
