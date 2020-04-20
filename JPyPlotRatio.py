@@ -10,6 +10,35 @@ import scipy
 from scipy import interpolate
 
 import ROOT
+matplotlib.rcParams["text.usetex"] = True;
+matplotlib.rcParams['text.latex.preamble'] = [
+	r'\usepackage{tgheros}',    # helvetica font
+	r'\usepackage{sansmath}',   # math-font matching  helvetica
+	r'\sansmath'                # actually tell tex to use it!
+	r'\usepackage{siunitx}',    # micro symbols
+	r'\sisetup{detect-all}',    # force siunitx to use the fonts
+	r'\newcommand{\mathdefault}[1][]{}'
+];
+#matplotlib.font_manager._rebuild()
+#matplotlib.rcParams["font.family"] = 'sans-serif';
+#matplotlib.rcParams["font.sans-serif"] = 'cm';
+#matplotlib.rcParams["font.family"] = 'Helvetica';
+#matplotlib.rcParams["font.family"] = 'Droid Sans';
+#prop = font_manager.FontProperties(fname='/usr/share/root/fonts/FreeSans.otf');
+#print(prop.get_name());
+#matplotlib.rcParams["font.family"] = 'Helvetica';
+#matplotlib.rcParams["font.cursive"] = 'Helvetica';
+#matplotlib.rcParams["font.family"] = 'Helvetica';
+#matplotlib.rcParams["font.cursive"] = 'Helvetica'; ###
+#matplotlib.rcParams['mathtext.fontset'] = 'custom'; ###
+#matplotlib.rcParams["text.latex.preamble"] = r'\newcommand{\mathdefault}[1][]{}';
+#matplotlib.rcParams["text.latex.preamble"] = [
+#	r'\usepackage{tgheros}',    # helvetica font
+#	r'\usepackage{sansmath}',   # math-font matching  helvetica
+#	r'\sansmath'                # actually tell tex to use it!
+#	r'\usepackage{siunitx}',    # micro symbols
+#	r'\sisetup{detect-all}',    # force siunitx to use the fonts
+#]
 matplotlib.rcParams["axes.linewidth"] = 1.5;
 
 def TGraphErrorsToNumpy(gr):
@@ -179,13 +208,13 @@ class JPyPlotRatio:
 			ratio_err = ratio_err[m];
 
 			panelIndex = self.plots[robj[0]][0];
-			if self.plots[robj[1]][3] == "data":
+			if self.plots[robj[0]][3] == "data":
 				ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 				ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
 				self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,ratio_err1d,**self.plots[robj[1]][4]);
-			elif self.plots[robj[1]][3] == "theory":
-				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[1]][4]);
+			elif self.plots[robj[0]][3] == "theory":
+				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][4]);
 				if "style" in robj[2] and robj[2]["style"] == "errorbar":
 					p1.remove();
 
