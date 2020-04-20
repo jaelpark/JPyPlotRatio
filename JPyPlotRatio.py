@@ -282,8 +282,20 @@ class JPyPlotRatio:
 		self.ax[0,1].legend(lines,labels,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
 	
 	def Save(self, filename):
-		self.p.savefig(filename,bbox_inches="tight");
+		try:
+			matplotlib.rcParams["text.usetex"] = True;
+			self.p.savefig(filename,bbox_inches="tight");
+		except RuntimeError:
+			print("warning: cannot comply to style guidelines due to missing latex");
+			matplotlib.rcParams["text.usetex"] = False;
+			self.p.savefig(filename,bbox_inches="tight");
 
 	def Show(self):
-		plt.show();
+		try:
+			matplotlib.rcParams["text.usetex"] = True;
+			plt.show();
+		except RuntimeError:
+			print("warning: cannot comply to style guidelines due to missing latex");
+			matplotlib.rcParams["text.usetex"] = False;
+			plt.show();
 
