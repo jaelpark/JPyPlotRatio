@@ -180,6 +180,8 @@ class JPyPlotRatio:
 			x1,y1,yerr1 = self.plots[robj[0]][1];
 			x2,y2,yerr2 = self.plots[robj[1]][1];
 
+			#print(y1,y2,y1/y2);
+
 			systs1 = list(filter(lambda t: t[0] == robj[0],self.systs));
 			if len(systs1) > 0:
 				terr = yerr1*yerr1;
@@ -200,10 +202,10 @@ class JPyPlotRatio:
 			sb = min(x1[-1],x2[-1]);
 			sx = np.linspace(sa,sb,1000);
 
-			y1d = interpolate.interp1d(x1,y1,bounds_error=False,fill_value="extrapolate")(sx);
-			yerr1d = interpolate.interp1d(x1,yerr1,bounds_error=False,fill_value="extrapolate")(sx);
-			y2d = interpolate.interp1d(x2,y2,bounds_error=False,fill_value="extrapolate")(sx);
-			yerr2d = interpolate.interp1d(x2,yerr2,bounds_error=False,fill_value="extrapolate")(sx);
+			y1d = interpolate.interp1d(x1,y1)(sx);
+			yerr1d = interpolate.interp1d(x1,yerr1)(sx);
+			y2d = interpolate.interp1d(x2,y2)(sx);
+			yerr2d = interpolate.interp1d(x2,yerr2)(sx);
 
 			ratio = y1d/y2d;
 			ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
@@ -219,16 +221,16 @@ class JPyPlotRatio:
 				ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 				ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-				self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,ratio_err1d,**self.plots[robj[0]][4]);
+				self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][4]);
 			elif self.plots[robj[0]][3] == "theory":
-				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][4]);
+				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-2*ratio_err,ratio+2*ratio_err,**self.plots[robj[0]][4]);
 				if "style" in robj[2] and robj[2]["style"] == "errorbar":
 					p1.remove();
 
 					ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 					ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 				else:
 					self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 
