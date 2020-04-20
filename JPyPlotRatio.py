@@ -212,7 +212,7 @@ class JPyPlotRatio:
 				ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 				ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-				self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,ratio_err1d,**self.plots[robj[1]][4]);
+				self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,ratio_err1d,**self.plots[robj[0]][4]);
 			elif self.plots[robj[0]][3] == "theory":
 				p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][4]);
 				if "style" in robj[2] and robj[2]["style"] == "errorbar":
