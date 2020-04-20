@@ -10,15 +10,6 @@ import scipy
 from scipy import interpolate
 
 import ROOT
-matplotlib.rcParams["text.usetex"] = True;
-matplotlib.rcParams['text.latex.preamble'] = [
-	r'\usepackage{tgheros}',    # helvetica font
-	r'\usepackage{sansmath}',   # math-font matching  helvetica
-	r'\sansmath'                # actually tell tex to use it!
-	r'\usepackage{siunitx}',    # micro symbols
-	r'\sisetup{detect-all}',    # force siunitx to use the fonts
-	r'\newcommand{\mathdefault}[1][]{}'
-];
 #matplotlib.font_manager._rebuild()
 #matplotlib.rcParams["font.family"] = 'sans-serif';
 #matplotlib.rcParams["font.sans-serif"] = 'cm';
@@ -281,21 +272,20 @@ class JPyPlotRatio:
 		lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 		self.ax[0,1].legend(lines,labels,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
 	
+	def EnableLatex(self, b):
+		matplotlib.rcParams["text.usetex"] = b;
+		matplotlib.rcParams['text.latex.preamble'] = [
+			r'\usepackage{tgheros}',    # helvetica font
+			r'\usepackage{sansmath}',   # math-font matching  helvetica
+			r'\sansmath'                # actually tell tex to use it!
+			r'\usepackage{siunitx}',    # micro symbols
+			r'\sisetup{detect-all}',    # force siunitx to use the fonts
+			r'\newcommand{\mathdefault}[1][]{}'
+		];
+	
 	def Save(self, filename):
-		try:
-			matplotlib.rcParams["text.usetex"] = True;
-			self.p.savefig(filename,bbox_inches="tight");
-		except RuntimeError:
-			print("warning: cannot comply to style guidelines due to missing latex");
-			matplotlib.rcParams["text.usetex"] = False;
-			self.p.savefig(filename,bbox_inches="tight");
+		self.p.savefig(filename,bbox_inches="tight");
 
 	def Show(self):
-		try:
-			matplotlib.rcParams["text.usetex"] = True;
-			plt.show();
-		except RuntimeError:
-			print("warning: cannot comply to style guidelines due to missing latex");
-			matplotlib.rcParams["text.usetex"] = False;
-			plt.show();
+		plt.show();
 
