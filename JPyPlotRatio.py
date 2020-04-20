@@ -52,7 +52,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
@@ -68,6 +68,7 @@ class JPyPlotRatio:
 		self.panelLabelAlign = panelLabelAlign;
 		self.rowBounds = rowBounds;
 		self.ratioBounds = ratioBounds;
+		self.ratioIndicator = ratioIndicator;
 		self.axisLabelSize = axisLabelSize;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
@@ -273,9 +274,10 @@ class JPyPlotRatio:
 			plt.setp(self.ax.flat[ra0].get_yticklabels(),visible=False);
 			plt.setp(self.ax.flat[ra1].get_yticklabels(),visible=False);
 
-			xl = self.ax.flat[ra1].get_xlim();
-			xs = xl[1]-xl[0];
-			self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],[1,1],color="gray",linestyle="--",alpha=0.5);
+			if self.ratioIndicator:
+				xl = self.ax.flat[ra1].get_xlim();
+				xs = xl[1]-xl[0];
+				self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],[1,1],color="gray",linestyle="--",alpha=0.5);
 
 			ij = np.unravel_index(ra1,s);
 
