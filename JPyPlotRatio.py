@@ -180,6 +180,22 @@ class JPyPlotRatio:
 			x1,y1,yerr1 = self.plots[robj[0]][1];
 			x2,y2,yerr2 = self.plots[robj[1]][1];
 
+			systs1 = list(filter(lambda t: t[0] == robj[0],self.systs));
+			if len(systs1) > 0:
+				terr = yerr1*yerr1;
+				for sys in systs1:
+					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*yerr1);
+					terr += serr*serr;
+				yerr1 = np.sqrt(terr);
+
+			systs2 = list(filter(lambda t: t[0] == robj[1],self.systs));
+			if len(systs2) > 0:
+				terr = yerr2*yerr2;
+				for sys in systs2:
+					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*yerr2);
+					terr += serr*serr;
+				yerr2 = np.sqrt(terr);
+
 			sa = max(x1[0],x2[0]);
 			sb = min(x1[-1],x2[-1]);
 			sx = np.linspace(sa,sb,1000);
@@ -276,7 +292,7 @@ class JPyPlotRatio:
 		matplotlib.rcParams["text.usetex"] = b;
 		matplotlib.rcParams['text.latex.preamble'] = [
 			r'\usepackage{tgheros}',    # helvetica font
-			r'\usepackage{sansmath}',   # math-font matching  helvetica
+			r'\usepackage{sansmath}',   # math-font matching helvetica
 			r'\sansmath'                # actually tell tex to use it!
 			r'\usepackage{siunitx}',    # micro symbols
 			r'\sisetup{detect-all}',    # force siunitx to use the fonts
