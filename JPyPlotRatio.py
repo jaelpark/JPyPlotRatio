@@ -10,26 +10,6 @@ import scipy
 from scipy import interpolate
 
 import ROOT
-#matplotlib.font_manager._rebuild()
-#matplotlib.rcParams["font.family"] = 'sans-serif';
-#matplotlib.rcParams["font.sans-serif"] = 'cm';
-#matplotlib.rcParams["font.family"] = 'Helvetica';
-#matplotlib.rcParams["font.family"] = 'Droid Sans';
-#prop = font_manager.FontProperties(fname='/usr/share/root/fonts/FreeSans.otf');
-#print(prop.get_name());
-#matplotlib.rcParams["font.family"] = 'Helvetica';
-#matplotlib.rcParams["font.cursive"] = 'Helvetica';
-#matplotlib.rcParams["font.family"] = 'Helvetica';
-#matplotlib.rcParams["font.cursive"] = 'Helvetica'; ###
-#matplotlib.rcParams['mathtext.fontset'] = 'custom'; ###
-#matplotlib.rcParams["text.latex.preamble"] = r'\newcommand{\mathdefault}[1][]{}';
-#matplotlib.rcParams["text.latex.preamble"] = [
-#	r'\usepackage{tgheros}',    # helvetica font
-#	r'\usepackage{sansmath}',   # math-font matching  helvetica
-#	r'\sansmath'                # actually tell tex to use it!
-#	r'\usepackage{siunitx}',    # micro symbols
-#	r'\sisetup{detect-all}',    # force siunitx to use the fonts
-#]
 matplotlib.rcParams["axes.linewidth"] = 1.5;
 
 def TGraphErrorsToNumpy(gr):
@@ -52,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
@@ -70,15 +50,16 @@ class JPyPlotRatio:
 		self.ratioBounds = ratioBounds;
 		self.ratioIndicator = ratioIndicator;
 		self.axisLabelSize = axisLabelSize;
+		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
-		#self.systPatchWidth = systPatchWidth;
 
 		self.s = np.shape(self.ax);
 		self.A = np.arange(self.s[0]*self.s[1]).reshape(self.s);
 		self.A = np.delete(self.A,0,1); #delete control column
 		self.A0 = np.delete(self.A,2*np.arange(self.s[1])+1,0);
 		self.a0 = self.A0.reshape(-1); #plot indices
+		self.a1 = np.delete(self.A,2*np.arange(self.s[1]),0).reshape(-1); #ratio indices
 
 		for i,a in enumerate(self.ax[0,1:]):
 			try:
@@ -136,6 +117,9 @@ class JPyPlotRatio:
 	def GetAxes(self, panelIndex):
 		return self.ax.flat[self.a0[panelIndex]];
 	
+	def GetRatioAxes(self, panelIndex):
+		return self.ax.flat[self.a1[panelIndex]];
+	
 	def GetPlot(self):
 		return self.p;
 	
@@ -145,7 +129,7 @@ class JPyPlotRatio:
 		A = self.A;
 		A0 = self.A0;
 		a0 = self.a0;
-		a1 = np.delete(A,2*np.arange(s[1]),0).reshape(-1); #ratio indices
+		a1 = self.a1;
 		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1));
 
 		labels = {};
@@ -219,6 +203,9 @@ class JPyPlotRatio:
 
 			panelIndex = self.plots[robj[0]][0];
 			if self.plots[robj[0]][3] == "data":
+				#if "style" in robj[2] and robj[2]["style"] == "errorbar_fill_syst":
+				#	https://alice-publications.web.cern.ch/system/files/draft/5551/2020-03-10-jtpaper_eb.pdf (fig1)
+				#	pass;
 				ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 				ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
@@ -290,8 +277,9 @@ class JPyPlotRatio:
 
 		lines = [labels[p] for p in labels];
 		lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
-		self.ax[0,1].legend(lines,labels,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
-	
+		#self.ax[0,1].legend(lines,labels,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
+		self.ax.flat[a0[self.legendPanel]].legend(lines,labels,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
+
 	def EnableLatex(self, b):
 		matplotlib.rcParams["text.usetex"] = b;
 		matplotlib.rcParams['text.latex.preamble'] = [
