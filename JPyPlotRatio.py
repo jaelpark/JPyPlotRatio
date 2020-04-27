@@ -138,7 +138,8 @@ class JPyPlotRatio:
 		A0 = self.A0;
 		a0 = self.a0;
 		a1 = self.a1;
-		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1)); #panel indices
+		#ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1)); #panel indices
+		ap = np.arange(self.A.size).reshape(self.A.size);
 
 		labels = {};
 
@@ -156,7 +157,7 @@ class JPyPlotRatio:
 				self.ax.flat[ry].set_ylim(self.rowBounds[i]);
 			except KeyError:
 				bounds = (1e6,-1e6);
-				for ra0,rap in zip(ra0n,ap[(s[1]-1)*i:]):
+				for ra0,rap in zip(ra0n,ap[self.A.shape[1]*i:]):
 					if rap not in self.usedSet:
 						continue;
 					ylim0 = self.ax.flat[ra0].get_ylim();
