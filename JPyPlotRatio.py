@@ -32,14 +32,9 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), ratioDisable=[], rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
-		ratioDisable = list(set(ratioDisable));
-		#self.p,self.ax = plt.subplots(2*panels[0],panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':panels[0]*[0.7,0.3]});
-		self.p,self.ax = plt.subplots(2*panels[0]-len(ratioDisable),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(ratioDisable)+1)});
-		#self.p,self.ax = plt.subplots(4,panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':[0.7,0.3,0.7,0.7]});#panels[0]*[0.7,0.3]});
-		#self.p,self.ax = plt.subplots(4,panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':[0.7,0.7,0.3,0.7]});#panels[0]*[0.7,0.3]});
-		#self.p,self.ax = plt.subplots(1,panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':[0.7]});#panels[0]*[0.7,0.3]});
-		#self.p,self.ax = plt.subplots(5,panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':[0.7,0.7,0.3,0.7,0.3]});#panels[0]*[0.7,0.3]});
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+		disableRatio = list(set(disableRatio));
+		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1)});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
 		self.plots = [];
@@ -66,35 +61,20 @@ class JPyPlotRatio:
 		self.Ay = self.A[:,0]; #y control column
 		self.A = np.delete(self.A,0,1); #delete control column
 
-		Nr = self.s[0];
-		rowsWithRatio = list(set(range(panels[0]))-set(ratioDisable));#[];#[1];#[1,2];
-		print(rowsWithRatio);
-		Tr = Nr-len(rowsWithRatio);
-		print(Nr,Tr);
-
-		cr = np.ones(Tr,dtype=int);
-		cr[rowsWithRatio] = 2;
-		ratioRows = [np.sum(cr[:t+1])-1 for t in rowsWithRatio];
-		print(ratioRows);
+		panelRowsWithRatio = list(set(range(panels[0]))-set(disableRatio));#[];#[1];#[1,2];
+		cr = np.ones(self.s[0]-len(panelRowsWithRatio),dtype=int);
+		cr[panelRowsWithRatio] = 2;
+		ratioRows = [np.sum(cr[:t+1])-1 for t in panelRowsWithRatio];
 
 		self.A0y = np.delete(self.Ay,ratioRows,0);
 		self.A0 = np.delete(self.A,ratioRows,0);
 		self.a0 = self.A0.reshape(-1); #plot indices (flat, access with panelIndex)
-		#self.A1y = np.delete(self.Ay,[0,2,3],0);
-		#self.A1 = np.delete(self.A,[0,2,3],0);
-		#self.a1 = np.ma.array(np.delete(self.A,[0],0)); #delete all plot rows for which there is a ratio
-		#self.a1[[1,2]] = np.ma.masked
-		#print(self.A0);
-		self.A1y = np.delete(self.Ay,list(set(range(Nr))-set(ratioRows)),0);
-		self.A1 = np.delete(self.A,list(set(range(Nr))-set(ratioRows)),0);
-		print(self.A1);
+		noRatioRows = list(set(range(self.s[0]))-set(ratioRows));
+		self.A1y = np.delete(self.Ay,noRatioRows,0);
+		self.A1 = np.delete(self.A,noRatioRows,0);
 		self.a1 = np.ma.array(np.delete(self.A,np.array(ratioRows)-1,0)); #delete all plot rows for which there is a ratio
-		self.a1[list(set(range(Tr))-set(rowsWithRatio))] = np.ma.masked; #mask plot rows for which there is no ratio
+		self.a1[disableRatio] = np.ma.masked; #mask plot rows for which there is no ratio
 		self.a1 = self.a1.reshape(-1);
-		#print(self.a1,self.a1[[1,2]]);
-		#self.a1 = np.delete(self.A,[1,2]#self.A1;
-		#self.a1[[1,2],:] = self.A.shape[1]*[-1];
-		print(self.a1);
 
 		#self.A0y = np.delete(self.Ay,2*np.arange(self.s[1])+1,0); #control column for plots
 		#self.A0 = np.delete(self.A,2*np.arange(self.s[1])+1,0);
