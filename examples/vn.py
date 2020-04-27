@@ -25,9 +25,9 @@ for i in range(0,8):
 	#Add theory curves
 	try:
 		x,y,yerr = ipg502[i]["data"];
-		hv2_th = plot.Add(i,(x,y,yerr),linestyle="-",color="orange"); #Add theory curve to panel 'i', lines and orange color
+		hv2_th = plot.Add(i,(x,y,yerr),linestyle="-",edgecolor="black",facecolor="orange",alpha=0.8,plotType="theory"); #Add theory curve to panel 'i', lines and orange color
 
-		plot.Ratio(hv2,hv2_th); #Calculate and plot ratio between data and theory
+		plot.Ratio(hv2_th,hv2); #Calculate and plot ratio between data and theory
 	except KeyError:
 		pass;
 
