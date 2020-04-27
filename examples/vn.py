@@ -16,7 +16,7 @@ plot = JPyPlotRatio(panels=(3,3), #number of panels (each with ratio)
 	xlabel="Centrality (%)", #create a 3x3 grid plot
 	panelLabel={i: "$v_{{{}}}$".format(i+2) for i in range(0,8)}, #label the panels v_n
 	panelScaling={1:2.0,2:3.0}, #add scaling to some of the panels (panel index : scale factor)
-	ylabel="$v_n$");
+	ylabel="$v_n$",disableRatio=[0]);
 
 for i in range(0,8):
 	gr = f.Get("gr_v{}".format(i+2)); #get TGraphErrors object from .root
