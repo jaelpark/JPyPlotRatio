@@ -15,6 +15,7 @@ Parameter | Type | Description
 --- | --- | ---
 panels | Tuple (h, w) | Multipanel plot dimensions. Default (1,1) (one panel)
 panelsize | Tuple (w, h) | Dimensions of one panel
+disableRatio | list `[rowN1,rowN2,...]` | Row indices for which ratio plot won't be shown 
 rowBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for each row
 colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
@@ -57,6 +58,7 @@ Parameter | Type | Description
 --- | --- | ---
 r1 | int | Index of the numerator plot
 r2 | int | Index of the denominator plot. The plot style for the ratio will be inherited from this curve.
+style | str | Style for the ratio plot. Specify "errorbar" to always have point plot ratio curves
 
 Add systematic uncertainties with `plot.AddSyst(...)`:
 
