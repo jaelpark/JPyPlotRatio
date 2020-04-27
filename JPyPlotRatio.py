@@ -56,10 +56,14 @@ class JPyPlotRatio:
 
 		self.s = np.shape(self.ax);
 		self.A = np.arange(self.s[0]*self.s[1]).reshape(self.s);
+		self.Ay = self.A[:,0]; #y control column
 		self.A = np.delete(self.A,0,1); #delete control column
+		self.A0y = np.delete(self.Ay,2*np.arange(self.s[1])+1,0); #control column for plots
 		self.A0 = np.delete(self.A,2*np.arange(self.s[1])+1,0);
-		self.a0 = self.A0.reshape(-1); #plot indices
-		self.a1 = np.delete(self.A,2*np.arange(self.s[1]),0).reshape(-1); #ratio indices
+		self.a0 = self.A0.reshape(-1); #plot indices (flat)
+		self.A1y = np.delete(self.Ay,2*np.arange(self.s[1]),0);
+		self.A1 = np.delete(self.A,2*np.arange(self.s[1]),0);
+		self.a1 = self.A1.reshape(-1); #ratio indices (flat)
 
 		for i,a in enumerate(self.ax[0,1:]):
 			try:
@@ -81,10 +85,14 @@ class JPyPlotRatio:
 			pass;
 
 		try:
-			for a in self.ax[:,0][::2]:
-				a.set_ylabel(kwargs['ylabel'],fontsize=16);
-			for a in self.ax[:,0][1::2]:
-				a.set_ylabel("Ratio",fontsize=16);
+			#for a in self.A0[:,0]:
+			#	a.set_ylabel(kwargs['ylabel'],fontsize=16);
+			#for a in self.A1[:,0]:
+			#	a.set_ylabel("Ratio",fontsize=16);
+			for ry in self.A0y:
+				self.ax.flat[ry].set_ylabel(kwargs['ylabel'],fontsize=16);
+			for ry in self.A1y:
+				self.ax.flat[ry].set_ylabel("Ratio",fontsize=16);
 		except KeyError:
 			pass;
 
@@ -130,7 +138,7 @@ class JPyPlotRatio:
 		A0 = self.A0;
 		a0 = self.a0;
 		a1 = self.a1;
-		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1));
+		ap = np.arange(s[0]//2*(s[1]-1)).reshape(s[0]//2*(s[1]-1)); #panel indices
 
 		labels = {};
 
@@ -143,9 +151,9 @@ class JPyPlotRatio:
 				labels[plot[2]] = (p1,
 					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
 			
-		for i,ra0n in enumerate(A0[:,]):
+		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
-				self.ax[2*i,0].set_ylim(self.rowBounds[i]);
+				self.ax.flat[ry].set_ylim(self.rowBounds[i]);
 			except KeyError:
 				bounds = (1e6,-1e6);
 				for ra0,rap in zip(ra0n,ap[(s[1]-1)*i:]):
@@ -153,19 +161,18 @@ class JPyPlotRatio:
 						continue;
 					ylim0 = self.ax.flat[ra0].get_ylim();
 					bounds = (min(bounds[0],ylim0[0]),max(bounds[1],ylim0[1]));
-				self.ax[2*i,0].set_ylim(bounds);
+				self.ax.flat[ry].set_ylim(bounds);
 
+		for i,ry in enumerate(self.A1y):
 			try:
-				self.ax[2*i+1,0].set_ylim(self.ratioBounds[i]);
+				self.ax.flat[ry].set_ylim(self.ratioBounds[i]);
 			except KeyError:
-				self.ax[2*i+1,0].set_ylim([0.5,1.5]);
+				self.ax.flat[ry].set_ylim([0.5,1.5]);
 
 		#plot the ratios
 		for robj in self.ratios:
 			x1,y1,yerr1 = self.plots[robj[0]][1];
 			x2,y2,yerr2 = self.plots[robj[1]][1];
-
-			#print(y1,y2,y1/y2);
 
 			systs1 = list(filter(lambda t: t[0] == robj[0],self.systs));
 			if len(systs1) > 0:
