@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels = False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator = True, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels = False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		height_ratios = np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
@@ -147,16 +147,16 @@ class JPyPlotRatio:
 			A.xaxis.set_tick_params(labelsize=13);
 			A.yaxis.set_tick_params(labelsize=13);
 	
-	def Add(self, panelIndex, arrays, label="", plotType="data", **kwargs):
-		self.plots.append((panelIndex,arrays,label,plotType,kwargs));
+	def Add(self, panelIndex, arrays, label="", labelLegendId=0, plotType="data", **kwargs):
+		self.plots.append((panelIndex,arrays,label,labelLegendId,plotType,kwargs));
 		self.usedSet.add(panelIndex);
 
 		return len(self.plots)-1; #handle to the plot, given to the Ratio()
 	
-	def AddTGraph(self, panelIndex, gr, label="", plotType="data", scale=1.0, **kwargs):
+	def AddTGraph(self, panelIndex, gr, label="", labelLegendId=0, plotType="data", scale=1.0, **kwargs):
 		#arrays = TGraphErrorsToNumpy(gr);
 		x,y,_,yerr = TGraphErrorsToNumpy(gr);
-		return self.Add(panelIndex,(x,y*scale,yerr*scale),label,plotType,**kwargs);
+		return self.Add(panelIndex,(x,y*scale,yerr*scale),label,labelLegendId,plotType,**kwargs);
 	
 	def AddSyst(self, r1, ysys):
 		self.systs.append((r1,ysys));
@@ -187,11 +187,11 @@ class JPyPlotRatio:
 
 		#plot the data
 		for plot in self.plots:
-			if plot[3] == "data":
-				labels[plot[2]] = self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[4]);
-			elif plot[3] == "theory":
-				p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**plot[4]);
-				labels[plot[2]] = (p1,
+			if plot[4] == "data":
+				labels[plot[2],plot[3]] = self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[5]);
+			elif plot[4] == "theory":
+				p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**plot[5]);
+				labels[plot[2],plot[3]] = (p1,
 					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
@@ -253,16 +253,16 @@ class JPyPlotRatio:
 
 			panelIndex = self.plots[robj[0]][0];
 			if not np.ma.is_masked(a1[panelIndex]):
-				if self.plots[robj[0]][3] == "data":
+				if self.plots[robj[0]][4] == "data":
 					#if "style" in robj[2] and robj[2]["style"] == "errorbar_fill_syst":
 					#	https://alice-publications.web.cern.ch/system/files/draft/5551/2020-03-10-jtpaper_eb.pdf (fig1)
 					#	pass;
 					ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 					ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][4]);
-				elif self.plots[robj[0]][3] == "theory":
-					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][4]);
+					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][5]);
+				elif self.plots[robj[0]][4] == "theory":
+					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][5]);
 					if robj[2].get("style","default") == "errorbar":
 						p1.remove();
 
@@ -279,7 +279,7 @@ class JPyPlotRatio:
 			xlim = ax.get_xlim();
 			patchWidth = 0.065*(xlim[1]-xlim[0]);
 			#for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
-			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc=self.plots[sys[0]][4]["color"],ec="#382a2a",alpha=0.3):#fc="#ff5555",ec="black"):
+			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc=self.plots[sys[0]][5]["color"],ec="#382a2a",alpha=0.25):#fc="#ff5555",ec="black"):
 				ax.add_patch(patch);
 
 		#adjust ticks
@@ -334,10 +334,17 @@ class JPyPlotRatio:
 		for a in self.ax[:,0]:
 			plt.setp(a.get_xticklabels(),visible=False);
 
-		lines = [labels[p] for p in labels];
-		lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
-		#self.ax[0,1].legend(lines,labels,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
-		self.ax.flat[a0[self.legendPanel]].legend(lines,labels,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
+		if isinstance(self.legendPanel,dict):
+			for k in self.legendPanel:
+				lines = [labels[p] for p in labels if p[1] == k];
+				lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
+				labels1 = [p[0] for p in labels if p[1] == k];
+				self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc[k]);
+		else:
+			lines = [labels[p] for p in labels];
+			lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
+			labels1 = [p[0] for p in labels];
+			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
 
 		self.p.align_labels(self.ax.flat[self.A0y]);
 		self.p.align_labels(self.ax.flat[self.A0[:,-1]]);
