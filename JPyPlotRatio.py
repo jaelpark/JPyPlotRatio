@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],panels[0]*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1)});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
@@ -43,6 +43,7 @@ class JPyPlotRatio:
 		self.usedSet = set(); #set of plot indices where something has been drawn
 
 		self.panelScaling = panelScaling;
+		self.panelPrivateScale = panelPrivateScale;
 		self.panelLabel = panelLabel;
 		self.panelLabelLoc = panelLabelLoc;
 		self.panelLabelSize = panelLabelSize;
@@ -103,14 +104,33 @@ class JPyPlotRatio:
 			pass;
 
 		try:
-			#for a in self.A0[:,0]:
-			#	a.set_ylabel(kwargs['ylabel'],fontsize=16);
-			#for a in self.A1[:,0]:
-			#	a.set_ylabel("Ratio",fontsize=16);
-			for ry in self.A0y:
-				self.ax.flat[ry].set_ylabel(kwargs['ylabel'],fontsize=16);
+			if isinstance(kwargs['ylabel'],str):
+				for ry in self.A0y:
+					self.ax.flat[ry].set_ylabel(kwargs['ylabel'],fontsize=self.axisLabelSize);
+			else:
+				for i,ry in enumerate(self.A0y):
+					try:
+						self.ax.flat[ry].set_ylabel(kwargs['ylabel'][i],fontsize=self.axisLabelSize);
+					except (KeyError,TypeError):
+						pass;
+
 			for ry in self.A1y:
-				self.ax.flat[ry].set_ylabel("Ratio",fontsize=16);
+				self.ax.flat[ry].set_ylabel("Ratio",fontsize=self.axisLabelSize);
+		except KeyError:
+			pass;
+
+		try:
+			if isinstance(kwargs['ylabelRight'],str):
+				for ry in self.A0[:,-1]:
+					self.ax.flat[ry].set_ylabel(kwargs['ylabelRight'],fontsize=self.axisLabelSize);
+					self.ax.flat[ry].yaxis.set_label_position("right");
+			else:
+				for i,ry in enumerate(self.A0[:,-1]):
+					try:
+						self.ax.flat[ry].set_ylabel(kwargs['ylabelRight'][i],fontsize=self.axisLabelSize);
+						self.ax.flat[ry].yaxis.set_label_position("right");
+					except (KeyError,TypeError):
+						pass;
 		except KeyError:
 			pass;
 
@@ -176,7 +196,7 @@ class JPyPlotRatio:
 			except KeyError:
 				bounds = (1e6,-1e6);
 				for ra0,rap in zip(ra0n,ap[self.A.shape[1]*i:]):
-					if rap not in self.usedSet:
+					if rap not in self.usedSet or rap in self.panelPrivateScale:
 						continue;
 					ylim0 = self.ax.flat[ra0].get_ylim();
 					bounds = (min(bounds[0],ylim0[0]),max(bounds[1],ylim0[1]));
@@ -261,6 +281,8 @@ class JPyPlotRatio:
 		#TODO: separate loop for ratio
 		#for ra0,ra1,rap in zip(a0,a1,ap):
 		for ra0,rap in zip(A0.flat,ap):
+			if rap in self.panelPrivateScale:
+				continue;
 			ij = np.unravel_index(ra0,s);
 
 			ylim1 = self.ax[ij[0],0].get_ylim();
