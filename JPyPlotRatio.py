@@ -228,16 +228,16 @@ class JPyPlotRatio:
 			ratio_err = ratio_err[m];
 
 			panelIndex = self.plots[robj[0]][0];
-			if self.plots[robj[0]][3] == "data":
-				#if "style" in robj[2] and robj[2]["style"] == "errorbar_fill_syst":
-				#	https://alice-publications.web.cern.ch/system/files/draft/5551/2020-03-10-jtpaper_eb.pdf (fig1)
-				#	pass;
-				ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
-				ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
+			if not np.ma.is_masked(a1[panelIndex]):
+				if self.plots[robj[0]][3] == "data":
+					#if "style" in robj[2] and robj[2]["style"] == "errorbar_fill_syst":
+					#	https://alice-publications.web.cern.ch/system/files/draft/5551/2020-03-10-jtpaper_eb.pdf (fig1)
+					#	pass;
+					ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
+					ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-				self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][4]);
-			elif self.plots[robj[0]][3] == "theory":
-				if not np.ma.is_masked(a1[panelIndex]):
+					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][4]);
+				elif self.plots[robj[0]][3] == "theory":
 					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][4]);
 					if "style" in robj[2] and robj[2]["style"] == "errorbar":
 						p1.remove();
