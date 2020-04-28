@@ -27,9 +27,9 @@ def TGraphErrorsToNumpy(gr):
 
 	return x,y,xerr,yerr;
 
-def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B"):
+def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	h = 0.5*s;
-	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=0.5,linewidth=0.5) for j in range(len(x))];
+	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
 	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds = {}, ratioIndicator = True, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels = False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
@@ -94,7 +94,7 @@ class JPyPlotRatio:
 		try:
 			if isinstance(kwargs['xlabel'],str):
 				if sharedColLabels:
-					self.p.text(0.5,0.06,kwargs['xlabel'],size=self.axisLabelSize,horizontalalignment="center");
+					self.p.text(0.5,0.005,kwargs['xlabel'],size=self.axisLabelSize,horizontalalignment="center");
 				else:
 					for a in self.ax[-1,1:]:
 						a.set_xlabel(kwargs['xlabel'],fontsize=self.axisLabelSize);
@@ -153,10 +153,10 @@ class JPyPlotRatio:
 
 		return len(self.plots)-1; #handle to the plot, given to the Ratio()
 	
-	def AddTGraph(self, panelIndex, gr, label="", plotType="data", **kwargs):
+	def AddTGraph(self, panelIndex, gr, label="", plotType="data", scale=1.0, **kwargs):
 		#arrays = TGraphErrorsToNumpy(gr);
 		x,y,_,yerr = TGraphErrorsToNumpy(gr);
-		return self.Add(panelIndex,(x,y,yerr),label,plotType,**kwargs);
+		return self.Add(panelIndex,(x,y*scale,yerr*scale),label,plotType,**kwargs);
 	
 	def AddSyst(self, r1, ysys):
 		self.systs.append((r1,ysys));
@@ -263,7 +263,7 @@ class JPyPlotRatio:
 					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][4]);
 				elif self.plots[robj[0]][3] == "theory":
 					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][4]);
-					if "style" in robj[2] and robj[2]["style"] == "errorbar":
+					if robj[2].get("style","default") == "errorbar":
 						p1.remove();
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
@@ -278,7 +278,8 @@ class JPyPlotRatio:
 			ax = self.ax.flat[a0[self.plots[sys[0]][0]]];
 			xlim = ax.get_xlim();
 			patchWidth = 0.065*(xlim[1]-xlim[0]);
-			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
+			#for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
+			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc=self.plots[sys[0]][4]["color"],ec="#382a2a",alpha=0.3):#fc="#ff5555",ec="black"):
 				ax.add_patch(patch);
 
 		#adjust ticks
