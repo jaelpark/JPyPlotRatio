@@ -142,7 +142,9 @@ class JPyPlotRatio:
 			A.tick_params(which="major",direction="in",length=8.0);
 			A.tick_params(which="minor",direction="in",length=2.8);
 			#A.xaxis.set_major_locator(plticker.MultipleLocator(1.0));
-			#A.xaxis.set_minor_locator(plticker.AutoMinorLocator(5));
+			#A.xaxis.set_major_locator(plticker.AutoLocator());
+			A.xaxis.set_major_locator(plticker.MaxNLocator(6));
+			A.xaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.yaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.xaxis.set_tick_params(labelsize=13);
 			A.yaxis.set_tick_params(labelsize=13);
