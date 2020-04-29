@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator = True, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels = False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		height_ratios = np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
@@ -94,7 +94,7 @@ class JPyPlotRatio:
 		try:
 			if isinstance(kwargs['xlabel'],str):
 				if sharedColLabels:
-					self.p.text(0.5,0.005,kwargs['xlabel'],size=self.axisLabelSize,horizontalalignment="center");
+					self.p.text(0.5,0.05,kwargs['xlabel'],size=self.axisLabelSize,horizontalalignment="center");
 				else:
 					for a in self.ax[-1,1:]:
 						a.set_xlabel(kwargs['xlabel'],fontsize=self.axisLabelSize);
@@ -175,7 +175,6 @@ class JPyPlotRatio:
 	
 	def Plot(self):
 		#create a matrix of plot indices and remove the control column
-		s = self.s;
 		A = self.A;
 		A0 = self.A0;
 		a0 = self.a0;
@@ -192,7 +191,9 @@ class JPyPlotRatio:
 			elif plot[4] == "theory":
 				p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**plot[5]);
 				labels[plot[2],plot[3]] = (p1,
-					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
+					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
+					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color="black",linestyle=p1.get_linestyle()[0])[0]);
+					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=matplotlib.colors.colorConverter.to_rgba(p1.get_edgecolor()[0],alpha=1.0),linestyle=p1.get_linestyle()[0])[0]);
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
@@ -271,7 +272,8 @@ class JPyPlotRatio:
 
 						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 					else:
-						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color="black",linestyle=p1.get_linestyle()[0]);
 
 		for sys in self.systs:
 			x1,y1,yerr1 = self.plots[sys[0]][1];
@@ -294,7 +296,7 @@ class JPyPlotRatio:
 			if rap in self.panelPrivateScale:
 				continue;
 
-			ij = np.unravel_index(ra0,s);
+			ij = np.unravel_index(ra0,self.s);
 
 			ylim1 = self.ax[ij[0],0].get_ylim();
 
@@ -323,7 +325,7 @@ class JPyPlotRatio:
 				xs = xl[1]-xl[0];
 				self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],[1,1],color="gray",linestyle="--",alpha=0.5);
 
-			ij = np.unravel_index(ra1,s);
+			ij = np.unravel_index(ra1,self.s);
 
 			ylim1 = self.ax[ij[0],0].get_ylim();
 			self.ax.flat[ra1].set_ylim(ylim1);
@@ -333,6 +335,12 @@ class JPyPlotRatio:
 		#hide ticks from the control plot
 		for a in self.ax[:,0]:
 			plt.setp(a.get_xticklabels(),visible=False);
+
+		#for ry in self.A0y:
+		#	self.ax.flat[ry].yaxis.offsetText.set_visible(True);
+		#	offsetStr = self.ax.flat[ry].yaxis.offsetText.get_text();#self.ax.flat[ry].yaxis.get_major_formatter().get_offset();
+		#	self.ax.flat[ry].text(0.0,0.9,offsetStr,horizontalalignment="right",verticalalignment="center",transform=self.ax.flat[ry].transAxes,size=13);
+		#	#a.text(0.0,0.9,offsetStr,horizontalalignment="right",verticalalignment="center",transform=a.transAxes,size=13);
 
 		if isinstance(self.legendPanel,dict):
 			for k in self.legendPanel:
