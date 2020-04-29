@@ -27,14 +27,15 @@ panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
 panelLabelAlign | str | Text alignment for the panel labels, "left", "center", "right" (default).
-legendLoc | Tuple (x, y) | Legend location in the panel
+legendPanel | int or Dict `{legendId:panelIndex, ...}` | Index (indices) of the panel(s) where to pace the legend
+legendLoc | Tuple (x, y) or Dict `{legendId:(x,y), ...}` | Legend location(s) in the panel(s)
 legendSize | int | Legend text size. Default 10
 
 Plot curves with `plot.Add(...)` or `plot.AddTGraph(...)`. `AddTGraph` automatically converts a TGraphErrors object to numpy arrays and plots them.
 
 ```python
-plotIndex = plot.Add(panelIndex, (x, y, yerr), label, plotType, **plotParams)
-plotIndex = plot.AddTGraph(panelIndex, gr, label, plotType, **plotParams)
+plotIndex = plot.Add(panelIndex, (x, y, yerr), label, labelLegendId, plotType, **plotParams)
+plotIndex = plot.AddTGraph(panelIndex, gr, label, labelLegendId, plotType, scale, **plotParams)
 ```
 
 Returns the index for the newly added plot (int).
@@ -45,13 +46,15 @@ panelIndex | int | Index of the panel to plot into. Panels are indexed from 0 to
 arrays | Tuple (x, y, yerr), np.array | Tuple of numpy arrays: x-values, y-values, and y sigma values
 gr | ROOT.TGraphErrors | TGraphErrors object to be plotted
 label | str | Label to use for the legend. Use same label for plots for which same legend entry is to be used.
+labelLegendId | int | Identifier of the legend to which the plot will be labeled
 plotType | str | "data" (default) or "theory". Data curve will be plotted as points and errorbars, while a theory curve will be shown as a colorband.
+scale | float | Scale factor for y values of the TGraphErrors object
 **plotParams | dict | Supplementary parameters passed to matplotlib `errorbar` or `fill_between` plotting methods depending on plotType.
 
 Ratio plots can be added by calling `plot.Ratio(...)`:
 
 ```python
-plot.Ratio(r1, r2)
+plot.Ratio(r1, r2, style)
 ```
 
 Parameter | Type | Description
