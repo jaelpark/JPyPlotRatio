@@ -245,13 +245,16 @@ class JPyPlotRatio:
 					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*yerr2);
 					terr2 += serr*serr;
 
-			if not self.ratioSystPlot:
-				yerr1 = np.sqrt(yerr1*yerr1+terr1);
-				yerr2 = np.sqrt(yerr2*yerr2+terr2);
-
 			sa = max(x1[0],x2[0]);
 			sb = min(x1[-1],x2[-1]);
 			sx = np.linspace(sa,sb,1000);
+
+			if not self.ratioSystPlot:
+				yerr1 = np.sqrt(yerr1*yerr1+terr1);
+				yerr2 = np.sqrt(yerr2*yerr2+terr2);
+			else:
+				terr1d = interpolate.interp1d(x1,terr1)(sx);
+				terr2d = interpolate.interp1d(x2,terr2)(sx);
 
 			y1d = interpolate.interp1d(x1,y1)(sx);
 			yerr1d = interpolate.interp1d(x1,yerr1)(sx);
@@ -261,9 +264,13 @@ class JPyPlotRatio:
 			if self.ratioType == "ratio":
 				ratio = y1d/y2d;
 				ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
+				if self.ratioSystPlot:
+					ratio_err_syst = ratio*np.sqrt((terr2d/y2d)**2+(terr1d/y1d)**2);
 			elif self.ratioType == "diff":
 				ratio = y1d-y2d;
 				ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
+				if self.ratioSystPlot:
+					ratio_err_syst = np.sqrt(terr1d*terr1d+terr2d*terr2d);
 			else:
 				raise ValueError("Invalid ratioType specified {}. ratioType must be either 'ratio' or 'diff'.".format(self.ratioType));
 
@@ -278,8 +285,7 @@ class JPyPlotRatio:
 				if self.plots[robj[0]][4] == "data":
 					if plotStyle == "default":
 						if self.ratioSystPlot:
-							terr = np.sqrt(terr1*terr1+terr2*terr2);
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-terr,ratio+terr,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
@@ -294,8 +300,7 @@ class JPyPlotRatio:
 						p1.remove();
 
 						if self.ratioSystPlot:
-							terr = np.sqrt(terr1*terr1+terr2*terr2);
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-terr,ratio+terr,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
