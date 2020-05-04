@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		height_ratios = np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
@@ -53,6 +53,7 @@ class JPyPlotRatio:
 		self.ratioBounds = ratioBounds;
 		self.ratioIndicator = ratioIndicator;
 		self.ratioType = ratioType;
+		self.ratioSystPlot = ratioSystPlot;
 		self.axisLabelSize = axisLabelSize;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
@@ -227,21 +228,26 @@ class JPyPlotRatio:
 			x1,y1,yerr1 = self.plots[robj[0]][1];
 			x2,y2,yerr2 = self.plots[robj[1]][1];
 
+			plotStyle = robj[2].get("style","default");
+
+			terr1 = np.zeros(len(yerr1));
+			terr2 = np.zeros(len(yerr2));
+
 			systs1 = list(filter(lambda t: t[0] == robj[0],self.systs));
 			if len(systs1) > 0:
-				terr = yerr1*yerr1;
 				for sys in systs1:
 					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*yerr1);
-					terr += serr*serr;
-				yerr1 = np.sqrt(terr);
+					terr1 += serr*serr;
 
 			systs2 = list(filter(lambda t: t[0] == robj[1],self.systs));
 			if len(systs2) > 0:
-				terr = yerr2*yerr2;
 				for sys in systs2:
 					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*yerr2);
-					terr += serr*serr;
-				yerr2 = np.sqrt(terr);
+					terr2 += serr*serr;
+
+			if not self.ratioSystPlot:
+				yerr1 = np.sqrt(yerr1*yerr1+terr1);
+				yerr2 = np.sqrt(yerr2*yerr2+terr2);
 
 			sa = max(x1[0],x2[0]);
 			sb = min(x1[-1],x2[-1]);
@@ -270,18 +276,26 @@ class JPyPlotRatio:
 			panelIndex = self.plots[robj[0]][0];
 			if not np.ma.is_masked(a1[panelIndex]):
 				if self.plots[robj[0]][4] == "data":
-					#if "style" in robj[2] and robj[2]["style"] == "errorbar_fill_syst":
-					#	https://alice-publications.web.cern.ch/system/files/draft/5551/2020-03-10-jtpaper_eb.pdf (fig1)
-					#	pass;
-					ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
-					ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
+					if plotStyle == "default":
+						if self.ratioSystPlot:
+							terr = np.sqrt(terr1*terr1+terr2*terr2);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-terr,ratio+terr,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
-					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][5]);
+						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
+						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
+
+						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][5]);
+					else:
+						raise ValueError("Invalid plotStyle specified {}. plotStyle must be 'default' when plotType is 'data'.");
+
 				elif self.plots[robj[0]][4] == "theory":
 					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][5]);
-					plotStyle = robj[2].get("style","default");
 					if plotStyle == "errorbar":
 						p1.remove();
+
+						if self.ratioSystPlot:
+							terr = np.sqrt(terr1*terr1+terr2*terr2);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-terr,ratio+terr,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
@@ -298,13 +312,10 @@ class JPyPlotRatio:
 			ax = self.ax.flat[a0[self.plots[sys[0]][0]]];
 			xlim = ax.get_xlim();
 			patchWidth = 0.065*(xlim[1]-xlim[0]);
-			#for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc="#916f6f",ec="#382a2a"):#fc="#ff5555",ec="black"):
-			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc=self.plots[sys[0]][5]["color"],ec="#382a2a",alpha=0.25):#fc="#ff5555",ec="black"):
+			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc=self.plots[sys[0]][5]["color"],ec="black",alpha=0.25):
 				ax.add_patch(patch);
 
 		#adjust ticks
-		#TODO: separate loop for ratio
-		#for ra0,ra1,rap in zip(a0,a1,ap):
 		for ra0,rap in zip(A0.flat,ap):
 			try:
 				self.ax.flat[ra0].text(*self.panelLabelLoc,self.panelLabel[rap],horizontalalignment=self.panelLabelAlign,verticalalignment="center",transform=self.ax.flat[ra0].transAxes,size=self.panelLabelSize);
