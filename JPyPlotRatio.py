@@ -170,6 +170,8 @@ class JPyPlotRatio:
 		self.systs.append((r1,ysys));
 	
 	def Ratio(self, r1, r2, **kwargs):
+		if r1 == r2:
+			raise ValueError("Ratio(r1, r2) with r1 == r2");
 		self.ratios.append((r1,r2,kwargs));
 	
 	def GetAxes(self, panelIndex):
@@ -272,7 +274,7 @@ class JPyPlotRatio:
 				if self.ratioSystPlot:
 					ratio_err_syst = np.sqrt(terr1d*terr1d+terr2d*terr2d);
 			else:
-				raise ValueError("Invalid ratioType specified {}. ratioType must be either 'ratio' or 'diff'.".format(self.ratioType));
+				raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio' or 'diff'.".format(self.ratioType));
 
 			m = ~np.isnan(ratio);
 			sx = sx[m];
@@ -292,7 +294,7 @@ class JPyPlotRatio:
 
 						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][5]);
 					else:
-						raise ValueError("Invalid plotStyle specified {}. plotStyle must be 'default' when plotType is 'data'.");
+						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
 				elif self.plots[robj[0]][4] == "theory":
 					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][5]);
@@ -305,12 +307,13 @@ class JPyPlotRatio:
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+						#self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
+						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
 					elif plotStyle == "default":
 						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color="black",linestyle=p1.get_linestyle()[0]);
 					else:
-						raise ValueError("Invalid plotStyle specified {}. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.");
+						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
 
 		for sys in self.systs:
 			x1,y1,yerr1 = self.plots[sys[0]][1];
