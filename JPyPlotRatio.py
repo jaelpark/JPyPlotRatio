@@ -119,8 +119,12 @@ class JPyPlotRatio:
 					except (KeyError,TypeError):
 						pass;
 
-			for ry in self.A1y:
-				self.ax.flat[ry].set_ylabel("Ratio",fontsize=self.axisLabelSize);
+			if self.ratioType == "ratio":
+				for ry in self.A1y:
+					self.ax.flat[ry].set_ylabel("Ratio",fontsize=self.axisLabelSize);
+			elif self.ratioType == "diff":
+				for ry in self.A1y:
+					self.ax.flat[ry].set_ylabel("Diff",fontsize=self.axisLabelSize);
 		except KeyError:
 			pass;
 
