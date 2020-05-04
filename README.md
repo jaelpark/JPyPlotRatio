@@ -19,6 +19,8 @@ disableRatio | list `[rowN1,rowN2,...]` | Row indices for which ratio plot won't
 rowBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for each row
 colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
+ratioIndicator | bool | If True, a dashed line will be drawn to indicate a zero difference line
+ratioType | str | Difference type "ratio" (a/b) or "diff" (a-b)
 panelScaling | Dict `{panelIndex:scale, ...}` | Dictionary of scale factors for the plots in each panel
 xlabel | str or Dict `{colId:str, ...}` | xlabel for all panels (str), or dictionary of xlabels for each column
 ylabel | str | ylabel for all panels

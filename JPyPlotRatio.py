@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		height_ratios = np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
@@ -52,6 +52,7 @@ class JPyPlotRatio:
 		self.rowBounds = rowBounds;
 		self.ratioBounds = ratioBounds;
 		self.ratioIndicator = ratioIndicator;
+		self.ratioType = ratioType;
 		self.axisLabelSize = axisLabelSize;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
@@ -196,6 +197,8 @@ class JPyPlotRatio:
 					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
 					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color="black",linestyle=p1.get_linestyle()[0])[0]);
 					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=matplotlib.colors.colorConverter.to_rgba(p1.get_edgecolor()[0],alpha=1.0),linestyle=p1.get_linestyle()[0])[0]);
+			else:
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data' or 'theory'.".format(plot[4]));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
@@ -245,8 +248,14 @@ class JPyPlotRatio:
 			y2d = interpolate.interp1d(x2,y2)(sx);
 			yerr2d = interpolate.interp1d(x2,yerr2)(sx);
 
-			ratio = y1d/y2d;
-			ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
+			if self.ratioType == "ratio":
+				ratio = y1d/y2d;
+				ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
+			elif self.ratioType == "diff":
+				ratio = y1d-y2d;
+				ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
+			else:
+				raise ValueError("Invalid ratioType specified {}. ratioType must be either 'ratio' or 'diff'.".format(self.ratioType));
 
 			m = ~np.isnan(ratio);
 			sx = sx[m];
@@ -266,16 +275,19 @@ class JPyPlotRatio:
 					self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][5]);
 				elif self.plots[robj[0]][4] == "theory":
 					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][5]);
-					if robj[2].get("style","default") == "errorbar":
+					plotStyle = robj[2].get("style","default");
+					if plotStyle == "errorbar":
 						p1.remove();
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
 						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
-					else:
+					elif plotStyle == "default":
 						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color="black",linestyle=p1.get_linestyle()[0]);
+					else:
+						raise ValueError("Invalid plotStyle specified {}. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.");
 
 		for sys in self.systs:
 			x1,y1,yerr1 = self.plots[sys[0]][1];
@@ -325,7 +337,11 @@ class JPyPlotRatio:
 			if self.ratioIndicator:
 				xl = self.ax.flat[ra1].get_xlim();
 				xs = xl[1]-xl[0];
-				self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],[1,1],color="gray",linestyle="--",alpha=0.5);
+				if self.ratioType == "ratio":
+					ratioLine = np.array([1,1]);
+				else:
+					ratioLine = np.array([0,0]);
+				self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],ratioLine,color="gray",linestyle="--",alpha=0.5);
 
 			ij = np.unravel_index(ra1,self.s);
 
