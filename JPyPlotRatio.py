@@ -167,6 +167,10 @@ class JPyPlotRatio:
 		x,y,_,yerr = TGraphErrorsToNumpy(gr);
 		return self.Add(panelIndex,(x,y*scale,yerr*scale),label,labelLegendId,plotType,**kwargs);
 	
+	def AddTH1(self, panelIndex, h1, label="", labelLegendId=0, plotType="histogram", scale=1.0, **kwargs):
+		gr = ROOT.TGraphErrors(h1);
+		return self.AddTGraph(panelIndex,gr,label,labelLegendId,plotType,scale,**kwargs);
+
 	def AddSyst(self, r1, ysys):
 		self.systs.append((r1,ysys));
 	
@@ -195,6 +199,9 @@ class JPyPlotRatio:
 
 		labels = {};
 
+		histograms = self.a0.size*[[]];
+		histogramMinY = self.a0.size*[np.inf];#np.full(self.a0.size,np.inf);
+
 		#plot the data
 		for plot in self.plots:
 			if plot[4] == "data":
@@ -205,8 +212,19 @@ class JPyPlotRatio:
 					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
 					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color="black",linestyle=p1.get_linestyle()[0])[0]);
 					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=matplotlib.colors.colorConverter.to_rgba(p1.get_edgecolor()[0],alpha=1.0),linestyle=p1.get_linestyle()[0])[0]);
+			elif plot[4] == "histogram":
+				labels[plot[2],plot[3]] = self.ax.flat[a0[plot[0]]].bar(*plot[1][0:2],plot[1][0][1]-plot[1][0][0],yerr=plot[1][2],**plot[5]);
+				histogramMinY[plot[0]] = np.minimum(plot[1][1],histogramMinY[plot[0]]);
+				try:
+					for plot1 in histograms[plot[0]]:
+						mask = plot1[1][1] < histogramMinY[plot[0]];
+						self.ax.flat[a0[plot1[0]]].bar(plot1[1][0][mask],plot1[1][1][mask],\
+							(plot1[1][0][1]-plot1[1][0][0]),yerr=plot1[1][2][mask],**plot1[5]);
+					histograms[plot[0]].append(plot);
+				except ValueError:
+					raise ValueError("Histograms in the same panel must have identical dimensions.");
 			else:
-				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data' or 'theory'.".format(plot[4]));
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory' or 'histogram'.".format(plot[4]));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
