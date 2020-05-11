@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelPrivateRowBounds={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		height_ratios = np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
@@ -45,6 +45,7 @@ class JPyPlotRatio:
 
 		self.panelScaling = panelScaling;
 		self.panelPrivateScale = panelPrivateScale;
+		self.panelPrivateRowBounds = panelPrivateRowBounds;
 		self.panelLabel = panelLabel;
 		self.panelLabelLoc = panelLabelLoc;
 		self.panelLabelSize = panelLabelSize;
@@ -331,6 +332,10 @@ class JPyPlotRatio:
 				pass;
 
 			if rap in self.panelPrivateScale:
+				try:
+					self.ax.flat[ra0].set_ylim(self.panelPrivateRowBounds[rap]);
+				except KeyError:
+					pass;
 				continue;
 
 			ij = np.unravel_index(ra0,self.s);
