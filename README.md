@@ -87,6 +87,8 @@ Add systematic uncertainties with `plot.AddSyst(...)`:
 plot.AddSyst(r1, ysys)
 ```
 
+By default, the systematic error is included in the ratio plot as a quadratic sum. To plot the ratio uncertainty for the systematics separately, specify `ratioSystPlot=True` while constructing JPyPlotRatio.
+
 Parameter | Type | Description
 --- | --- | ---
 r1 | int | Index of the plot to add systematic uncertainty patches
