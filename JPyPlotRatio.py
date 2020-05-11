@@ -32,7 +32,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelPrivateRowBounds={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		height_ratios = np.delete(np.array(panels[0]*[0.7,0.3]),2*np.array(disableRatio)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
@@ -46,6 +46,8 @@ class JPyPlotRatio:
 		self.panelScaling = panelScaling;
 		self.panelPrivateScale = panelPrivateScale;
 		self.panelPrivateRowBounds = panelPrivateRowBounds;
+		self.panelRatioPrivateScale = panelRatioPrivateScale;
+		self.panelRatioPrivateRowBounds = panelRatioPrivateRowBounds;
 		self.panelLabel = panelLabel;
 		self.panelLabelLoc = panelLabelLoc;
 		self.panelLabelSize = panelLabelSize;
@@ -379,7 +381,7 @@ class JPyPlotRatio:
 
 			plt.setp(self.ax.flat[ra0].get_yticklabels(),visible=False);
 
-		for ra1 in self.A1.flat:
+		for ra1,rap in zip(self.A1.flat,ap):
 			if self.ratioIndicator:
 				xl = self.ax.flat[ra1].get_xlim();
 				xs = xl[1]-xl[0];
@@ -388,6 +390,13 @@ class JPyPlotRatio:
 				else:
 					ratioLine = np.array([0,0]);
 				self.ax.flat[ra1].plot([xl[0]+0.05*xs,xl[1]-0.05*xs],ratioLine,color="gray",linestyle="--",alpha=0.5);
+
+			if rap in self.panelRatioPrivateScale:
+				try:
+					self.ax.flat[ra1].set_ylim(self.panelRatioPrivateRowBounds[rap]);
+				except KeyError:
+					pass;
+				continue;
 
 			ij = np.unravel_index(ra1,self.s);
 
