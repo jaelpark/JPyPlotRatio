@@ -277,6 +277,8 @@ class JPyPlotRatio:
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
 				yerr2 = np.sqrt(yerr2*yerr2+terr2);
 			else:
+				terr1 = np.sqrt(terr1);
+				terr2 = np.sqrt(terr2);
 				terr1d = interpolate.interp1d(x1,terr1)(sx);
 				terr2d = interpolate.interp1d(x2,terr2)(sx);
 
@@ -309,7 +311,7 @@ class JPyPlotRatio:
 				if self.plots[robj[0]][4] == "data":
 					if plotStyle == "default":
 						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(len(ratio))-ratio_err_syst,np.ones(len(ratio))+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
@@ -324,7 +326,7 @@ class JPyPlotRatio:
 						p1.remove();
 
 						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(len(ratio))-ratio_err_syst,np.ones(len(ratio))+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
@@ -332,6 +334,11 @@ class JPyPlotRatio:
 						#self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
 					elif plotStyle == "default":
+						if self.ratioSystPlot:
+							#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(len(ratio))-ratio_err_syst,np.ones(len(ratio))+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							#self.ax.flat[a1[panelIndex]].errorbar(sx,ratio,ratio_err_syst,color="black");
+							#self.ax.flat[a1[panelIndex]].errorbar(sx,np.ones(len(ratio)),ratio_err_syst,color="black");
 						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color="black",linestyle=p1.get_linestyle()[0]);
 					else:
