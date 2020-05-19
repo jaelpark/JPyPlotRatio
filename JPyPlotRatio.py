@@ -271,7 +271,7 @@ class JPyPlotRatio:
 
 			sa = max(x1[0],x2[0]);
 			sb = min(x1[-1],x2[-1]);
-			sx = np.linspace(sa,sb,1000);
+			sx = np.linspace(sa,sb,10*max(len(x1),len(x2)));
 
 			if not self.ratioSystPlot:
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
