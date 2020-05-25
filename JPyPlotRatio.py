@@ -428,12 +428,12 @@ class JPyPlotRatio:
 				lines = [labels[p] for p in labels if p[1] == k];
 				lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 				labels1 = [p[0] for p in labels if p[1] == k];
-				self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc[k]);
+				self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
 		else:
 			lines = [labels[p] for p in labels];
 			lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 			labels1 = [p[0] for p in labels];
-			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.1,bbox_to_anchor=self.legendLoc);
+			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc);
 
 		self.p.align_labels(self.ax.flat[self.A0y]);
 		self.p.align_labels(self.ax.flat[self.A0[:,-1]]);
