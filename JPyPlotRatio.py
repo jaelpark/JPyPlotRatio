@@ -210,10 +210,11 @@ class JPyPlotRatio:
 			if plot[4] == "data":
 				labels[plot[2],plot[3]] = self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[5]);
 			elif plot[4] == "theory":
-				p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**plot[5]);
+				#p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**plot[5]);
+				p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**{k:plot[5][k] for k in plot[5] if k not in ["linecolor"]});
 				labels[plot[2],plot[3]] = (p1,
 					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
-					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color="black",linestyle=p1.get_linestyle()[0])[0]);
+					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=plot[5].get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
 					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=matplotlib.colors.colorConverter.to_rgba(p1.get_edgecolor()[0],alpha=1.0),linestyle=p1.get_linestyle()[0])[0]);
 			elif plot[4] == "histogram":
 				labels[plot[2],plot[3]] = self.ax.flat[a0[plot[0]]].bar(*plot[1][0:2],plot[1][0][1]-plot[1][0][0],yerr=plot[1][2],**plot[5]);
