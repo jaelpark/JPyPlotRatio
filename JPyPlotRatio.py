@@ -322,7 +322,7 @@ class JPyPlotRatio:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
 				elif self.plots[robj[0]][4] == "theory":
-					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**self.plots[robj[0]][5]);
+					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]][5][k] for k in self.plots[robj[0]][5] if k not in ["linecolor"]});
 					if plotStyle == "errorbar":
 						p1.remove();
 
@@ -341,7 +341,7 @@ class JPyPlotRatio:
 							#self.ax.flat[a1[panelIndex]].errorbar(sx,ratio,ratio_err_syst,color="black");
 							#self.ax.flat[a1[panelIndex]].errorbar(sx,np.ones(len(ratio)),ratio_err_syst,color="black");
 						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
-						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color="black",linestyle=p1.get_linestyle()[0]);
+						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]][5].get("linecolor","black"),linestyle=p1.get_linestyle()[0]);
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
 
