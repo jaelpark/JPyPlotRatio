@@ -9,7 +9,11 @@ import matplotlib.container as container
 import scipy
 from scipy import interpolate
 
-import ROOT
+try:
+	import ROOT
+except ModuleNotFoundError:
+	print("pyROOT not found, disabling ROOT integration.");
+
 matplotlib.rcParams["axes.linewidth"] = 1.5;
 
 def TGraphErrorsToNumpy(gr):
