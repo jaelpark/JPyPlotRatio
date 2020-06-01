@@ -177,6 +177,11 @@ class JPyPlotRatio:
 	def AddTH1(self, panelIndex, h1, label="", labelLegendId=0, plotType="histogram", scale=1.0, **kwargs):
 		gr = ROOT.TGraphErrors(h1);
 		return self.AddTGraph(panelIndex,gr,label,labelLegendId,plotType,scale,**kwargs);
+	
+	def Add2D(self, panelIndex, arrays, **kwargs):
+		return self.Add(panelIndex,arrays,plotType="2d",**kwargs);
+	
+	#def AddTH2(self, panelIndex, h1, label="", 
 
 	def AddSyst(self, r1, ysys):
 		self.systs.append((r1,ysys));
@@ -212,16 +217,19 @@ class JPyPlotRatio:
 		#plot the data
 		for plot in self.plots:
 			if plot[4] == "data":
-				labels[plot[2],plot[3]] = self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[5]);
+				pr = self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[5]);
+				if plot[2] != "":
+					labels[plot[2],plot[3]] = pr;
 			elif plot[4] == "theory":
-				#p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**plot[5]);
 				p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**{k:plot[5][k] for k in plot[5] if k not in ["linecolor"]});
-				labels[plot[2],plot[3]] = (p1,
-					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0])[0]);
+				pr = (p1,
 					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=plot[5].get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
-					#self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=matplotlib.colors.colorConverter.to_rgba(p1.get_edgecolor()[0],alpha=1.0),linestyle=p1.get_linestyle()[0])[0]);
+				if plot[2] != "":
+					labels[plot[2],plot[3]] = pr;
 			elif plot[4] == "histogram":
-				labels[plot[2],plot[3]] = self.ax.flat[a0[plot[0]]].bar(*plot[1][0:2],plot[1][0][1]-plot[1][0][0],yerr=plot[1][2],**plot[5]);
+				if plot[2] != "":
+					labels[plot[2],plot[3]] = pr;
+				pr = self.ax.flat[a0[plot[0]]].bar(*plot[1][0:2],plot[1][0][1]-plot[1][0][0],yerr=plot[1][2],**plot[5]);
 				histogramMinY[plot[0]] = np.minimum(plot[1][1],histogramMinY[plot[0]]);
 				try:
 					for plot1 in histograms[plot[0]]:
@@ -231,8 +239,11 @@ class JPyPlotRatio:
 					histograms[plot[0]].append(plot);
 				except ValueError:
 					raise ValueError("Histograms in the same panel must have identical dimensions.");
+			elif plot[4] == "2d":
+				pr = self.ax.flat[a0[plot[0]]].imshow(plot[1],aspect="auto",cmap=plot[5].get("cmap","rainbow"),**plot[5]);
+				self.p.colorbar(pr,ax=self.ax.flat[a0[plot[0]]]);
 			else:
-				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory' or 'histogram'.".format(plot[4]));
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'histogram' or '2d'.".format(plot[4]));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
