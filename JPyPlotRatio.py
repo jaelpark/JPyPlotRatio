@@ -31,6 +31,24 @@ def TGraphErrorsToNumpy(gr):
 
 	return x,y,xerr,yerr;
 
+def TH2ToNumpy(h):
+	nx = h.GetNbinsX();
+	ny = h.GetNbinsY();
+	z = np.empty((ny,nx));
+	x = np.empty(nx);
+	y = np.empty(ny);
+	for i in range(0,nx):
+		for j in range(0,ny):
+			z[j,i] = h.GetBinContent(i+1,j+1);
+	t = h.GetXaxis();
+	for i in range(0,nx):
+		x[i] = t.GetBinCenter(i+1);
+	t = h.GetYaxis();
+	for i in range(0,ny):
+		y[i] = t.GetBinCenter(i+1);
+
+	return z,x,y;
+
 def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	h = 0.5*s;
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
@@ -181,7 +199,11 @@ class JPyPlotRatio:
 	def Add2D(self, panelIndex, arrays, **kwargs):
 		return self.Add(panelIndex,arrays,plotType="2d",**kwargs);
 	
-	#def AddTH2(self, panelIndex, h1, label="", 
+	def AddTH2(self, panelIndex, h2, **kwargs):
+		h,_,_ = TH2ToNumpy(h2);
+		xe = h2.GetXaxis();
+		ye = h2.GetYaxis();
+		return self.Add2D(panelIndex,h,extent=kwargs.get("extent",(xe.GetXmin(),xe.GetXmax(),ye.GetXmin(),ye.GetXmax())));
 
 	def AddSyst(self, r1, ysys):
 		self.systs.append((r1,ysys));
