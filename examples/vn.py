@@ -25,7 +25,7 @@ plot = JPyPlotRatio(panels=(3,3), #number of panels (each with ratio)
 
 for i in range(0,8):
 	gr = f.Get("gr_v{}".format(i+2)); #get TGraphErrors object from .root
-	hv2 = plot.AddTGraph(i,gr,fmt="s",color="black"); #add it to panel 'i', square markers and black color
+	hv2 = plot.Add(i,gr,fmt="s",color="black"); #add it to panel 'i', square markers and black color
 
 	ysys = 0.01*syst["vn_Overall_p"][i];
 	plot.AddSyst(hv2,ysys);
