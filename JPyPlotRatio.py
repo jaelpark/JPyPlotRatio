@@ -219,12 +219,12 @@ class JPyPlotRatio:
 	
 	#deprecated
 	def AddTGraph(self, panelIndex, gr, label="", labelLegendId=0, plotType="data", **kwargs):
-		print("WARNING: AddTGraph deprecated: use Add() to plot ROOT.TGraphErrors objects");
+		print("WARNING: AddTGraph deprecated: use Add() to plot ROOT.TGraphErrors objects (interchangeable)");
 		return self.Add(panelIndex,gr,label,labelLegendId,plotType,**kwargs);
 	
 	#deprecated
 	def AddTH1(self, panelIndex, h1, label="", labelLegendId=0, plotType="histogram", **kwargs):
-		print("WARNING: AddTH1 deprecated: use Add() to plot ROOT.TH1 objects");
+		print("WARNING: AddTH1 deprecated: use Add() to plot ROOT.TH1 objects (interchangeable)");
 		return self.Add(panelIndex,h1,label,labelLegendId,plotType,**kwargs);
 	
 	def Add2D(self, panelIndex, arrays, **kwargs):
@@ -238,7 +238,7 @@ class JPyPlotRatio:
 	
 	#deprecated
 	def AddTH2(self, panelIndex, h2, **kwargs):
-		print("WARNING: AddTH2 deprecated: use Add2D() to plot ROOT.TH2 objects");
+		print("WARNING: AddTH2 deprecated: use Add2D() to plot ROOT.TH2 objects (interchangeable)");
 		self.Add2D(panelIndex,h2,**kwargs);
 
 	def AddSyst(self, r1, ysys):
