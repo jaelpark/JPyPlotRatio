@@ -9,6 +9,8 @@ import matplotlib.container as container
 import scipy
 from scipy import interpolate
 
+import sys #for checking modules
+
 try:
 	import ROOT
 except ModuleNotFoundError:
@@ -19,6 +21,7 @@ matplotlib.rcParams["axes.linewidth"] = 1.5;
 def TGraphErrorsToNumpy(gr):
 	n = gr.GetN();
 	x,y,xerr,yerr = np.empty(n),np.empty(n),np.empty(n),np.empty(n);
+	#x,y,xerr,yerr = 4*[np.empty(n)];
 
 	a = ROOT.Double(0);
 	b = ROOT.Double(0);
@@ -30,6 +33,24 @@ def TGraphErrorsToNumpy(gr):
 		yerr[i] = gr.GetErrorY(i);
 
 	return x,y,xerr,yerr;
+
+def TGraphAsymmErrorsToNumpy(gr):
+	n = gr.GetN();
+	x,y,xerr1,xerr2,yerr1,yerr2 = np.empty(n),np.empty(n),np.empty(n),np.empty(n),np.empty(n),np.empty(n);
+	#x,y,xerr1,xerr2,yerr1,yerr2 = 6*[np.empty(n)];
+
+	a = ROOT.Double(0);
+	b = ROOT.Double(0);
+	for i in range(0,n):
+		gr.GetPoint(i,a,b);
+		x[i] = float(a);
+		y[i] = float(b);
+		xerr1[i] = gr.GetEXlow(i);
+		xerr2[i] = gr.GetEXhigh(i);
+		yerr1[i] = gr.GetEYlow(i);
+		yerr2[i] = gr.GetEYhigh(i);
+
+	return x,y,xerr1,xerr2,yerr1,yerr2;
 
 def TH2ToNumpy(h):
 	nx = h.GetNbinsX();
@@ -51,7 +72,7 @@ def TH2ToNumpy(h):
 
 def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	h = 0.5*s;
-	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(len(x))];
+	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(x.size)];
 
 class JPyPlotRatio:
 	def __init__(self, panels=(1,1), panelsize=(3,3.375), disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
@@ -182,31 +203,59 @@ class JPyPlotRatio:
 			A.yaxis.set_tick_params(labelsize=13);
 	
 	def Add(self, panelIndex, arrays, label="", labelLegendId=0, plotType="data", **kwargs):
+		if "ROOT" in sys.modules:
+			if isinstance(arrays,ROOT.TH1):
+				arrays = ROOT.TGraphErrors(arrays);
+			if isinstance(arrays,ROOT.TGraphErrors) or isinstance(arrays,ROOT.TObject):
+				x,y,_,yerr = TGraphErrorsToNumpy(arrays);
+				scale = kwargs.get("scale",1.0);
+				arrays = (x,scale*y,scale*yerr);
+			#elif isinstance(arrays,ROOT.TObject):
+			#	raise ValueError("Not a valid plot object ROOT.TObject (label: {})".format(label));
 		self.plots.append((panelIndex,arrays,label,labelLegendId,plotType,kwargs));
 		self.usedSet.add(panelIndex);
 
 		return len(self.plots)-1; #handle to the plot, given to the Ratio()
 	
-	def AddTGraph(self, panelIndex, gr, label="", labelLegendId=0, plotType="data", scale=1.0, **kwargs):
-		#arrays = TGraphErrorsToNumpy(gr);
-		x,y,_,yerr = TGraphErrorsToNumpy(gr);
-		return self.Add(panelIndex,(x,y*scale,yerr*scale),label,labelLegendId,plotType,**kwargs);
+	#deprecated
+	def AddTGraph(self, panelIndex, gr, label="", labelLegendId=0, plotType="data", **kwargs):
+		print("WARNING: AddTGraph deprecated: use Add() to plot ROOT.TGraphErrors objects");
+		return self.Add(panelIndex,gr,label,labelLegendId,plotType,**kwargs);
 	
-	def AddTH1(self, panelIndex, h1, label="", labelLegendId=0, plotType="histogram", scale=1.0, **kwargs):
-		gr = ROOT.TGraphErrors(h1);
-		return self.AddTGraph(panelIndex,gr,label,labelLegendId,plotType,scale,**kwargs);
+	#deprecated
+	def AddTH1(self, panelIndex, h1, label="", labelLegendId=0, plotType="histogram", **kwargs):
+		print("WARNING: AddTH1 deprecated: use Add() to plot ROOT.TH1 objects");
+		return self.Add(panelIndex,h1,label,labelLegendId,plotType,**kwargs);
 	
 	def Add2D(self, panelIndex, arrays, **kwargs):
+		if "ROOT" in sys.modules:
+			if isinstance(arrays,ROOT.TH2):
+				arrays,_,_ = TH2ToNumpy(arrays);
+				xe = h2.GetXaxis();
+				ye = h2.GetYaxis();
+				kwargs["extent"] = kwargs.get("extent",(xe.GetXmin(),xe.GetXmax(),ye.GetXmin(),ye.GetXmax()));
 		return self.Add(panelIndex,arrays,plotType="2d",**kwargs);
 	
+	#deprecated
 	def AddTH2(self, panelIndex, h2, **kwargs):
-		h,_,_ = TH2ToNumpy(h2);
-		xe = h2.GetXaxis();
-		ye = h2.GetYaxis();
-		return self.Add2D(panelIndex,h,extent=kwargs.get("extent",(xe.GetXmin(),xe.GetXmax(),ye.GetXmin(),ye.GetXmax())));
+		print("WARNING: AddTH2 deprecated: use Add2D() to plot ROOT.TH2 objects");
+		self.Add2D(panelIndex,h2,**kwargs);
 
 	def AddSyst(self, r1, ysys):
-		self.systs.append((r1,ysys));
+		yofs = 0.0;
+		if isinstance(ysys,np.ndarray):
+			yofs = np.zeros(ysys.size);
+
+		elif "ROOT" in sys.modules:
+			if isinstance(ysys,ROOT.TGraphErrors):
+				_,_,_,ysys = TGraphErrorsToNumpy(ysys);
+				yofs = np.zeros(ysys.len);
+			elif isinstance(ysys,ROOT.TGraphAsymmErrors):
+				_,_,_,_,ye1,ye2 = TGraphAsymmErrorsToNumpy(ysys);
+				ysys = 0.5*(ye1+ye2);
+				yofs = 0.5*(ye2-ye1);
+
+		self.systs.append((r1,ysys,yofs));
 	
 	def Ratio(self, r1, r2, **kwargs):
 		if r1 == r2:
@@ -292,8 +341,8 @@ class JPyPlotRatio:
 
 			plotStyle = robj[2].get("style","default");
 
-			terr1 = np.zeros(len(yerr1));
-			terr2 = np.zeros(len(yerr2));
+			terr1 = np.zeros(yerr1.size);
+			terr2 = np.zeros(yerr2.size);
 
 			systs1 = list(filter(lambda t: t[0] == robj[0],self.systs));
 			if len(systs1) > 0:
@@ -309,7 +358,7 @@ class JPyPlotRatio:
 
 			sa = max(x1[0],x2[0]);
 			sb = min(x1[-1],x2[-1]);
-			sx = np.linspace(sa,sb,10*max(len(x1),len(x2)));
+			sx = np.linspace(sa,sb,10*max(x1.size,x2.size));
 
 			if not self.ratioSystPlot:
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
@@ -349,7 +398,7 @@ class JPyPlotRatio:
 				if self.plots[robj[0]][4] == "data":
 					if plotStyle == "default":
 						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(len(ratio))-ratio_err_syst,np.ones(len(ratio))+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
@@ -364,7 +413,7 @@ class JPyPlotRatio:
 						p1.remove();
 
 						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(len(ratio))-ratio_err_syst,np.ones(len(ratio))+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
@@ -374,9 +423,9 @@ class JPyPlotRatio:
 					elif plotStyle == "default":
 						if self.ratioSystPlot:
 							#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(len(ratio))-ratio_err_syst,np.ones(len(ratio))+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
 							#self.ax.flat[a1[panelIndex]].errorbar(sx,ratio,ratio_err_syst,color="black");
-							#self.ax.flat[a1[panelIndex]].errorbar(sx,np.ones(len(ratio)),ratio_err_syst,color="black");
+							#self.ax.flat[a1[panelIndex]].errorbar(sx,np.ones(ratio.size),ratio_err_syst,color="black");
 						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]][5].get("linecolor","black"),linestyle=p1.get_linestyle()[0]);
 					else:
@@ -387,7 +436,7 @@ class JPyPlotRatio:
 			ax = self.ax.flat[a0[self.plots[sys[0]][0]]];
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
-			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1),patchWidth,fc=self.plots[sys[0]][5]["color"],ec="black",alpha=0.25):
+			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1)+sys[2],patchWidth,fc=self.plots[sys[0]][5]["color"],ec="black",alpha=0.25):
 				ax.add_patch(patch);
 
 		#adjust ticks
