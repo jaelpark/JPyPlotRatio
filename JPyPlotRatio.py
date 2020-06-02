@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.ticker as plticker
 import matplotlib.container as container
+#from mpl_toolkits import mplot3d
 
 import scipy
 from scipy import interpolate
@@ -45,10 +46,10 @@ def TGraphAsymmErrorsToNumpy(gr):
 		gr.GetPoint(i,a,b);
 		x[i] = float(a);
 		y[i] = float(b);
-		xerr1[i] = gr.GetEXlow(i);
-		xerr2[i] = gr.GetEXhigh(i);
-		yerr1[i] = gr.GetEYlow(i);
-		yerr2[i] = gr.GetEYhigh(i);
+		xerr1[i] = gr.GetErrorXlow(i);
+		xerr2[i] = gr.GetErrorXhigh(i);
+		yerr1[i] = gr.GetErrorYlow(i);
+		yerr2[i] = gr.GetErrorYhigh(i);
 
 	return x,y,xerr1,xerr2,yerr1,yerr2;
 
@@ -254,6 +255,9 @@ class JPyPlotRatio:
 				_,_,_,_,ye1,ye2 = TGraphAsymmErrorsToNumpy(ysys);
 				ysys = 0.5*(ye1+ye2);
 				yofs = 0.5*(ye2-ye1);
+
+		if isinstance(ysys,np.ndarray) and ysys.size != self.plots[r1][1][0].size:
+			raise ValueError("Systematics graph number of points does not match with the plot point count");
 
 		self.systs.append((r1,ysys,yofs));
 	
