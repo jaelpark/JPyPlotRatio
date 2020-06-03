@@ -10,6 +10,7 @@ import matplotlib.container as container
 import scipy
 from scipy import interpolate
 
+from ctypes import c_double
 import sys #for checking modules
 
 try:
@@ -24,12 +25,14 @@ def TGraphErrorsToNumpy(gr):
 	x,y,xerr,yerr = np.empty(n),np.empty(n),np.empty(n),np.empty(n);
 	#x,y,xerr,yerr = 4*[np.empty(n)];
 
-	a = ROOT.Double(0);
-	b = ROOT.Double(0);
+	#a = ROOT.Double(0);
+	#b = ROOT.Double(0);
+	a = c_double(0);
+	b = c_double(0);
 	for i in range(0,n):
 		gr.GetPoint(i,a,b);
-		x[i] = float(a);
-		y[i] = float(b);
+		x[i] = a.value;
+		y[i] = b.value;
 		xerr[i] = gr.GetErrorX(i);
 		yerr[i] = gr.GetErrorY(i);
 
@@ -40,12 +43,14 @@ def TGraphAsymmErrorsToNumpy(gr):
 	x,y,xerr1,xerr2,yerr1,yerr2 = np.empty(n),np.empty(n),np.empty(n),np.empty(n),np.empty(n),np.empty(n);
 	#x,y,xerr1,xerr2,yerr1,yerr2 = 6*[np.empty(n)];
 
-	a = ROOT.Double(0);
-	b = ROOT.Double(0);
+	#a = ROOT.Double(0);
+	#b = ROOT.Double(0);
+	a = c_double(0);
+	b = c_double(0);
 	for i in range(0,n):
 		gr.GetPoint(i,a,b);
-		x[i] = float(a);
-		y[i] = float(b);
+		x[i] = a.value;
+		y[i] = b.value;
 		xerr1[i] = gr.GetErrorXlow(i);
 		xerr2[i] = gr.GetErrorXhigh(i);
 		yerr1[i] = gr.GetErrorYlow(i);
