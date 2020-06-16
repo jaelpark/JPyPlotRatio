@@ -10,6 +10,7 @@ import matplotlib.container as container
 import scipy
 from scipy import interpolate
 
+from collections import namedtuple
 from ctypes import c_double
 import sys #for checking modules
 
@@ -22,8 +23,7 @@ matplotlib.rcParams["axes.linewidth"] = 1.5;
 
 def TGraphErrorsToNumpy(gr):
 	n = gr.GetN();
-	x,y,xerr,yerr = np.empty(n),np.empty(n),np.empty(n),np.empty(n);
-	#x,y,xerr,yerr = 4*[np.empty(n)];
+	x,y,xerr,yerr = [np.empty(n) for i in range(4)];
 
 	#a = ROOT.Double(0);
 	#b = ROOT.Double(0);
@@ -40,8 +40,7 @@ def TGraphErrorsToNumpy(gr):
 
 def TGraphAsymmErrorsToNumpy(gr):
 	n = gr.GetN();
-	x,y,xerr1,xerr2,yerr1,yerr2 = np.empty(n),np.empty(n),np.empty(n),np.empty(n),np.empty(n),np.empty(n);
-	#x,y,xerr1,xerr2,yerr1,yerr2 = 6*[np.empty(n)];
+	x,y,xerr1,xerr2,yerr1,yerr2 = [np.empty(n) for i in range(6)];
 
 	#a = ROOT.Double(0);
 	#b = ROOT.Double(0);
@@ -86,6 +85,8 @@ class JPyPlotRatio:
 		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*np.array(disableRatio)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
+
+		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','plotType','kwargs']);
 
 		self.plots = [];
 		self.systs = [];
@@ -219,7 +220,14 @@ class JPyPlotRatio:
 				arrays = (x,scale*y,scale*yerr);
 			#elif isinstance(arrays,ROOT.TObject):
 			#	raise ValueError("Not a valid plot object ROOT.TObject (label: {})".format(label));
-		self.plots.append((panelIndex,arrays,label,labelLegendId,plotType,kwargs));
+
+		self.plots.append(self.PlotEntry(
+			panelIndex=panelIndex,
+			arrays=arrays,
+			label=label,
+			labelLegendId=labelLegendId,
+			plotType=plotType,
+			kwargs=kwargs));
 		self.usedSet.add(panelIndex);
 
 		return len(self.plots)-1; #handle to the plot, given to the Ratio()
@@ -262,7 +270,7 @@ class JPyPlotRatio:
 				ysys = 0.5*(ye1+ye2);
 				yofs = 0.5*(ye2-ye1);
 
-		if isinstance(ysys,np.ndarray) and ysys.size != self.plots[r1][1][0].size:
+		if isinstance(ysys,np.ndarray) and ysys.size != self.plots[r1].arrays[0].size:
 			raise ValueError("Systematics graph number of points does not match with the plot point count");
 
 		self.systs.append((r1,ysys,yofs));
@@ -297,34 +305,34 @@ class JPyPlotRatio:
 
 		#plot the data
 		for plot in self.plots:
-			if plot[4] == "data":
-				pr = self.ax.flat[a0[plot[0]]].errorbar(*plot[1],**plot[5]);
-				if plot[2] != "":
-					labels[plot[2],plot[3]] = pr;
-			elif plot[4] == "theory":
-				p1 = self.ax.flat[a0[plot[0]]].fill_between(plot[1][0],plot[1][1]-plot[1][2],plot[1][1]+plot[1][2],**{k:plot[5][k] for k in plot[5] if k not in ["linecolor"]});
+			if plot.plotType == "data":
+				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**plot.kwargs);
+				if plot.label != "":
+					labels[plot.label,plot.labelLegendId] = pr;
+			elif plot.plotType == "theory":
+				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1]-plot.arrays[2],plot.arrays[1]+plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor"]});
 				pr = (p1,
-					self.ax.flat[a0[plot[0]]].plot(*plot[1][0:2],color=plot[5].get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
-				if plot[2] != "":
-					labels[plot[2],plot[3]] = pr;
-			elif plot[4] == "histogram":
-				if plot[2] != "":
-					labels[plot[2],plot[3]] = pr;
-				pr = self.ax.flat[a0[plot[0]]].bar(*plot[1][0:2],plot[1][0][1]-plot[1][0][0],yerr=plot[1][2],**plot[5]);
-				histogramMinY[plot[0]] = np.minimum(plot[1][1],histogramMinY[plot[0]]);
+					self.ax.flat[a0[plot.panelIndex]].plot(*plot.arrays[0:2],color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
+				if plot.label != "":
+					labels[plot.label,plot.labelLegendId] = pr;
+			elif plot.plotType == "histogram":
+				if plot.label != "":
+					labels[plot.label,plot.labelLegendId] = pr;
+				pr = self.ax.flat[a0[plot.panelIndex]].bar(*plot.arrays[0:2],plot.arrays[0][1]-plot.arrays[0][0],yerr=plot.arrays[2],**plot.kwargs);
+				histogramMinY[plot.panelIndex] = np.minimum(plot.arrays[1],histogramMinY[plot.panelIndex]);
 				try:
-					for plot1 in histograms[plot[0]]:
-						mask = plot1[1][1] < histogramMinY[plot[0]];
-						self.ax.flat[a0[plot1[0]]].bar(plot1[1][0][mask],plot1[1][1][mask],\
-							(plot1[1][0][1]-plot1[1][0][0]),yerr=plot1[1][2][mask],**plot1[5]);
-					histograms[plot[0]].append(plot);
+					for plot1 in histograms[plot.panelIndex]:
+						mask = plot1.arrays[1] < histogramMinY[plot.panelIndex];
+						self.ax.flat[a0[plot1.panelIndex]].bar(plot1.arrays[0][mask],plot1.arrays[1][mask],\
+							(plot1.arrays[0][1]-plot1.arrays[0][0]),yerr=plot1.arrays[2][mask],**plot1.kwargs);
+					histograms[plot.panelIndex].append(plot);
 				except ValueError:
 					raise ValueError("Histograms in the same panel must have identical dimensions.");
-			elif plot[4] == "2d":
-				pr = self.ax.flat[a0[plot[0]]].imshow(plot[1],aspect="auto",cmap=plot[5].get("cmap","rainbow"),**plot[5]);
-				self.p.colorbar(pr,ax=self.ax.flat[a0[plot[0]]]);
+			elif plot.plotType == "2d":
+				pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,aspect="auto",cmap=plot.kwargs.get("cmap","rainbow"),**plot.kwargs);
+				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
-				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'histogram' or '2d'.".format(plot[4]));
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'histogram' or '2d'.".format(plot.plotType));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
@@ -346,8 +354,8 @@ class JPyPlotRatio:
 
 		#plot the ratios
 		for robj in self.ratios:
-			x1,y1,yerr1 = self.plots[robj[0]][1];
-			x2,y2,yerr2 = self.plots[robj[1]][1];
+			x1,y1,yerr1 = self.plots[robj[0]].arrays;
+			x2,y2,yerr2 = self.plots[robj[1]].arrays;
 
 			plotStyle = robj[2].get("style","default");
 
@@ -403,27 +411,27 @@ class JPyPlotRatio:
 			ratio = ratio[m];
 			ratio_err = ratio_err[m];
 
-			panelIndex = self.plots[robj[0]][0];
+			panelIndex = self.plots[robj[0]].panelIndex;
 			if not np.ma.is_masked(a1[panelIndex]):
-				if self.plots[robj[0]][4] == "data":
+				if self.plots[robj[0]].plotType == "data":
 					if plotStyle == "default":
 						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]][5]);
+						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]].kwargs);
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
-				elif self.plots[robj[0]][4] == "theory":
-					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]][5][k] for k in self.plots[robj[0]][5] if k not in ["linecolor"]});
+				elif self.plots[robj[0]].plotType == "theory":
+					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]].kwargs[k] for k in self.plots[robj[0]].kwargs if k not in ["linecolor"]});
 					if plotStyle == "errorbar":
 						p1.remove();
 
 						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
@@ -432,21 +440,21 @@ class JPyPlotRatio:
 						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
 					elif plotStyle == "default":
 						if self.ratioSystPlot:
-							#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]][5]["color"],edgecolor="black",alpha=0.25);
+							#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
+							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
 							#self.ax.flat[a1[panelIndex]].errorbar(sx,ratio,ratio_err_syst,color="black");
 							#self.ax.flat[a1[panelIndex]].errorbar(sx,np.ones(ratio.size),ratio_err_syst,color="black");
 						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
-						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]][5].get("linecolor","black"),linestyle=p1.get_linestyle()[0]);
+						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]].kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0]);
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
 
 		for sys in self.systs:
-			x1,y1,yerr1 = self.plots[sys[0]][1];
-			ax = self.ax.flat[a0[self.plots[sys[0]][0]]];
+			x1,y1,yerr1 = self.plots[sys[0]].arrays;
+			ax = self.ax.flat[a0[self.plots[sys[0]].panelIndex]];
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
-			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1)+sys[2],patchWidth,fc=self.plots[sys[0]][5]["color"],ec="black",alpha=0.25):
+			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1)+sys[2],patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
 				ax.add_patch(patch);
 
 		#adjust ticks
