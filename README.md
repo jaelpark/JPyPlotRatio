@@ -64,8 +64,8 @@ Returns the index for the newly added plot (int), which can be used as a referen
 Parameter | Type | Description
 --- | --- | ---
 panelIndex | int | Index of the panel to plot into. Panels are indexed from 0 to _n_ in a row-wise order.
-arrays | Tuple (x, y, yerr), np.array | Tuple of numpy arrays: x-values, y-values, and y sigma values
-gr | ROOT.TObject | ROOT object to be plotted
+arrays | Tuple (x, y, yerr), `np.array` | Tuple of numpy arrays: x-values, y-values, and y sigma values
+gr | `ROOT.TObject` | ROOT object to be plotted
 label | str | Label to use for the legend. Use same label for plots for which same legend entry is to be used.
 labelLegendId | int | Identifier of the legend to which the plot will be labeled
 plotType | str | "data" (default) or "theory". Data curve will be plotted as points and errorbars, while a theory curve will be shown as a colorband.
@@ -81,7 +81,7 @@ plotIndex = plot.Add2D(panelIndex, arrays=np.ndarray or gr=ROOT.TH2, **plotParam
 Parameter | Type | Description
 --- | --- | ---
 panelIndex | int | Index of the panel to plot into. Panels are indexed from 0 to _n_ in a row-wise order.
-arrays | np.ndarray, ROOT.TH2 | numpy 2d matrix to be plotted, or ROOT.TH2 histogram.
+arrays | `np.ndarray`, `ROOT.TH2` | numpy 2d matrix to be plotted, or `ROOT.TH2` histogram.
 **plotParams | dict | Supplementary parameters passed to matplotlib `imshow`.
 
 Ratio plots can be added by calling `plot.Ratio(...)`:
@@ -107,7 +107,7 @@ By default, the systematic error is included in the ratio plot as a quadratic su
 Parameter | Type | Description
 --- | --- | ---
 r1 | int | Index of the plot to add systematic uncertainty patches
-ysys | float, np.array, ROOT.TObject | (Relative) systematic uncertainty. If float, the value will be multiplied by the y-values of the curve, else if numpy array, the values from this array will be used directly. ROOT objects will be converted to a numpy array before plotting.
+ysys | float, `np.array`, `ROOT.TObject` | (Relative) systematic uncertainty. If float, the value will be multiplied by the y-values of the curve, else if numpy array, the values from this array will be used directly. ROOT objects will be converted to a numpy array before plotting.
 
 Finally, create the plot by calling `plot.Plot()`. A plot can be saved with `plot.Save(filename)`, and shown in a window wit `plot.Show()`.
 
