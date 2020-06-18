@@ -306,7 +306,7 @@ class JPyPlotRatio:
 		#plot the data
 		for plot in self.plots:
 			if plot.plotType == "data":
-				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**plot.kwargs);
+				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale"]});
 				if plot.label != "":
 					labels[plot.label,plot.labelLegendId] = pr;
 			elif plot.plotType == "theory":
