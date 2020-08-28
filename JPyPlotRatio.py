@@ -318,6 +318,12 @@ class JPyPlotRatio:
 					self.ax.flat[a0[plot.panelIndex]].plot(*plot.arrays[0:2],color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
 				if plot.label != "":
 					labels[plot.label,plot.labelLegendId] = pr;
+
+			elif plot.plotType == "fill_between":
+				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1],plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor"]});
+				if plot.label != "":
+					labels[plot.label,plot.labelLegendId] = pr;
+
 			elif plot.plotType == "histogram":
 				if plot.label != "":
 					labels[plot.label,plot.labelLegendId] = pr;
@@ -335,7 +341,7 @@ class JPyPlotRatio:
 				pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,aspect="auto",cmap=plot.kwargs.get("cmap","rainbow"),**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
-				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'histogram' or '2d'.".format(plot.plotType));
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram' or '2d'.".format(plot.plotType));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
