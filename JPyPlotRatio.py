@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.ticker as plticker
 import matplotlib.container as container
-#from mpl_toolkits import mplot3d
 
 import scipy
 from scipy import interpolate
@@ -82,7 +81,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 class JPyPlotRatio:
 	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
-		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*np.array(disableRatio)+1);
+		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*np.array(disableRatio,dtype=int)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
@@ -131,7 +130,7 @@ class JPyPlotRatio:
 		noRatioRows = list(set(range(self.s[0]))-set(ratioRows));
 		self.A1y = np.delete(self.Ay,noRatioRows,0);
 		self.A1 = np.delete(self.A,noRatioRows,0);
-		self.a1 = np.ma.array(np.delete(self.A,np.array(ratioRows)-1,0)); #delete all plot rows for which there is a ratio
+		self.a1 = np.ma.array(np.delete(self.A,np.array(ratioRows,dtype=int)-1,0)); #delete all plot rows for which there is a ratio
 		self.a1[disableRatio] = np.ma.masked; #mask plot rows for which there is no ratio
 		self.a1 = self.a1.reshape(-1);
 
@@ -221,6 +220,10 @@ class JPyPlotRatio:
 			#elif isinstance(arrays,ROOT.TObject):
 			#	raise ValueError("Not a valid plot object ROOT.TObject (label: {})".format(label));
 
+		#set uncertainty to zero if not provided
+		if len(arrays) < 3:
+			arrays = (arrays[0],arrays[1],np.zeros(arrays[1].size));
+
 		self.plots.append(self.PlotEntry(
 			panelIndex=panelIndex,
 			arrays=arrays,
@@ -264,7 +267,7 @@ class JPyPlotRatio:
 		elif "ROOT" in sys.modules:
 			if isinstance(ysys,ROOT.TGraphErrors):
 				_,_,_,ysys = TGraphErrorsToNumpy(ysys);
-				yofs = np.zeros(ysys.len);
+				yofs = np.zeros(ysys.size);
 			elif isinstance(ysys,ROOT.TGraphAsymmErrors):
 				_,_,_,_,ye1,ye2 = TGraphAsymmErrorsToNumpy(ysys);
 				ysys = 0.5*(ye1+ye2);
