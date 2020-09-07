@@ -224,6 +224,12 @@ class JPyPlotRatio:
 		if len(arrays) < 3:
 			arrays = (arrays[0],arrays[1],np.zeros(arrays[1].size));
 
+		try:
+			arrays = (arrays[0]+kwargs['xshift'],arrays[1],arrays[2]);
+			del kwargs['xshift'];
+		except KeyError:
+			pass;
+
 		self.plots.append(self.PlotEntry(
 			panelIndex=panelIndex,
 			arrays=arrays,
@@ -552,6 +558,7 @@ class JPyPlotRatio:
 		self.p.align_labels(self.ax.flat[self.A0y]);
 		self.p.align_labels(self.ax.flat[self.A0[:,-1]]);
 		self.p.align_labels(self.ax.flat[self.A1y]);
+		self.p.align_ylabels(self.ax[:,0]);
 
 	def EnableLatex(self, b):
 		matplotlib.rcParams["text.usetex"] = b;
@@ -561,7 +568,7 @@ class JPyPlotRatio:
 			r'\sansmath'                # actually tell tex to use it!
 			r'\usepackage{siunitx}',    # micro symbols
 			r'\sisetup{detect-all}',    # force siunitx to use the fonts
-			r'\newcommand{\mathdefault}[1][]{}'
+			r'\renewcommand{\mathdefault}[1][]{}'
 		];
 	
 	def Save(self, filename):
