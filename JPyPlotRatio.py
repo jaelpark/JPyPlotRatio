@@ -279,8 +279,10 @@ class JPyPlotRatio:
 				ysys = 0.5*(ye1+ye2);
 				yofs = 0.5*(ye2-ye1);
 
-		if isinstance(ysys,np.ndarray) and ysys.size != self.plots[r1].arrays[0].size:
-			raise ValueError("Systematics graph number of points does not match with the plot point count");
+		if isinstance(ysys,np.ndarray):
+			if ysys.size != self.plots[r1].arrays[0].size:
+				raise ValueError("Systematics graph number of points does not match with the plot point count");
+			ysys *= self.plots[r1].kwargs.get("scale",1.0);
 
 		self.systs.append((r1,ysys,yofs));
 	
