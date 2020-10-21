@@ -67,7 +67,7 @@ Parameter | Type | Description
 --- | --- | ---
 panelIndex | int | Index of the panel to plot into. Panels are indexed from 0 to _n_ in a row-wise order.
 arrays | Tuple (x, y, yerr), `np.array` | Tuple of numpy arrays: x-values, y-values, and y sigma values
-gr | `ROOT.TObject` | ROOT object to be plotted
+gr | `ROOT.TObject` | ROOT object to be plotted. Supported objects are `TGraphErrors`, `TH1`, and `TF1`.
 label | str | Label to use for the legend. Use same label for plots for which same legend entry is to be used.
 labelLegendId | int | Identifier of the legend to which the plot will be labeled
 plotType | str | "data" (default) or "theory". Data curve will be plotted as points and errorbars, while a theory curve will be shown as a colorband.
