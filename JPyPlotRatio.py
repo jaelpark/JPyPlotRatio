@@ -213,6 +213,13 @@ class JPyPlotRatio:
 	
 	def Add(self, panelIndex, arrays, label="", labelLegendId=0, plotType="data", **kwargs):
 		if "ROOT" in sys.modules:
+			if isinstance(arrays,ROOT.TF1):
+				a = c_double(0);
+				b = c_double(0);
+				arrays.GetRange(a,b);
+				vf = np.vectorize(lambda t: arrays.Eval(t));
+				x = np.linspace(a,b,1000);
+				arrays = x,vf(x);
 			if isinstance(arrays,ROOT.TH1):
 				arrays = ROOT.TGraphErrors(arrays);
 			if isinstance(arrays,ROOT.TGraphErrors) or isinstance(arrays,ROOT.TObject):
