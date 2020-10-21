@@ -31,6 +31,7 @@ panelsize | Tuple (w, h) | Dimensions of one panel
 layoutRatio | float | Relative proportions between the plot panel and ratio panel. Default 0.7
 disableRatio | list `[rowN1,rowN2,...]` | Row indices for which ratio plot won't be shown 
 rowBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for each row
+rowBoundsMax | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of minimum and maximum y-limits for each row - applied if plot point exceeds these limits. Ignored for a row if `rowBounds` has a setting for it.
 colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
 ratioIndicator | bool | If True, a dashed line will be drawn to indicate a zero difference line
@@ -45,6 +46,7 @@ systPatchWidth | float | Fractional width of the systematic uncertainty patches 
 xlabel | str or Dict `{colId:str, ...}` | xlabel for all panels (str), or dictionary of xlabels for each column
 ylabel | str | ylabel for all panels
 axisLabelSize | int | Axis label text size. Default 16
+tickLabelSize | int | Tick labe size. Default 13
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
