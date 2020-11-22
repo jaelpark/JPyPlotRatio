@@ -261,12 +261,19 @@ class JPyPlotRatio:
 		return self.Add(panelIndex,h1,label,labelLegendId,plotType,**kwargs);
 	
 	def Add2D(self, panelIndex, arrays, **kwargs):
+		#if "ROOT" in sys.modules:
+		#	if isinstance(arrays,ROOT.TH2):
+		#		xe = arrays.GetXaxis();
+		#		ye = arrays.GetYaxis();
+		#		arrays,_,_ = TH2ToNumpy(arrays);
+		#		kwargs["extent"] = kwargs.get("extent",(xe.GetXmin(),xe.GetXmax(),ye.GetXmin(),ye.GetXmax()));
 		if "ROOT" in sys.modules:
 			if isinstance(arrays,ROOT.TH2):
-				arrays,_,_ = TH2ToNumpy(arrays);
-				xe = h2.GetXaxis();
-				ye = h2.GetYaxis();
-				kwargs["extent"] = kwargs.get("extent",(xe.GetXmin(),xe.GetXmax(),ye.GetXmin(),ye.GetXmax()));
+				#xe = arrays.GetXaxis();
+				#ye = arrays.GetYaxis();
+				z,x,y = TH2ToNumpy(arrays);
+				arrays = (x,y,z);
+				#kwargs["extent"] = kwargs.get("extent",(xe.GetXmin(),xe.GetXmax(),ye.GetXmin(),ye.GetXmax()));
 		return self.Add(panelIndex,arrays,plotType="2d",**kwargs);
 	
 	#deprecated
@@ -323,21 +330,32 @@ class JPyPlotRatio:
 		histograms = self.a0.size*[[]];
 		histogramMinY = self.a0.size*[np.inf];#np.full(self.a0.size,np.inf);
 
+		twins = {};
+
 		#plot the data
 		for plot in self.plots:
 			if plot.plotType == "data":
-				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale"]});
+				if plot.kwargs.get("skipAutolim",False):
+					try:
+						at = twins[plot.panelIndex];
+					except KeyError:
+						at = self.ax.flat[a0[plot.panelIndex]].twinx();
+						twins[plot.panelIndex] = at;
+				else:
+					at = self.ax.flat[a0[plot.panelIndex]];
+				pr = at.errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
+				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
 					labels[plot.label,plot.labelLegendId] = pr;
 			elif plot.plotType == "theory":
-				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1]-plot.arrays[2],plot.arrays[1]+plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor"]});
+				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1]-plot.arrays[2],plot.arrays[1]+plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim"]});
 				pr = (p1,
 					self.ax.flat[a0[plot.panelIndex]].plot(*plot.arrays[0:2],color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
 				if plot.label != "":
 					labels[plot.label,plot.labelLegendId] = pr;
 
 			elif plot.plotType == "fill_between":
-				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1],plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor"]});
+				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1],plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim"]});
 				if plot.label != "":
 					labels[plot.label,plot.labelLegendId] = pr;
 
@@ -355,7 +373,10 @@ class JPyPlotRatio:
 				except ValueError:
 					raise ValueError("Histograms in the same panel must have identical dimensions.");
 			elif plot.plotType == "2d":
-				pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,aspect="auto",cmap=plot.kwargs.get("cmap","rainbow"),**plot.kwargs);
+				#pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,aspect="auto",cmap=plot.kwargs.get("cmap","rainbow"),norm=matplotlib.colors.LogNorm(1,plot.arrays.max()),**plot.kwargs);
+				#self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
+				#pr = self.ax.flat[a0[plot.panelIndex]].contour(*plot.arrays,levels=10,norm=matplotlib.colors.LogNorm(1,plot.arrays[2].max()),colors='k',linewidths=0.2);
+				pr = self.ax.flat[a0[plot.panelIndex]].contourf(*plot.arrays,levels=10,**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
 				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram' or '2d'.".format(plot.plotType));
@@ -553,6 +574,14 @@ class JPyPlotRatio:
 		#hide ticks from the control plot
 		for a in self.ax[:,0]:
 			plt.setp(a.get_xticklabels(),visible=False);
+
+		for t in twins:
+			self.ax.flat[a0[t]].set_zorder(1);
+			self.ax.flat[a0[t]].patch.set_visible(False);
+			twins[t].axis("off");
+			twins[t].set_yticks([]);
+			ylim1 = self.ax.flat[a0[t]].get_ylim();
+			twins[t].set_ylim(ylim1);
 
 		#for ry in self.A0y:
 		#	self.ax.flat[ry].yaxis.offsetText.set_visible(True);
