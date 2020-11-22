@@ -9,7 +9,7 @@ Multipanel plotting class with ratio panels.
 		- base=/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.7
 		- cmake ../root-6.20.00 -DCMAKE_INSTALL_PREFIX={your build dir} -DPYTHON_EXECUTABLE=${base}/bin/python3 -DPYTHON_INCLUDE_DIR=${base}/Headers -DPYTHON_LIBRARY=${base}/lib/libpython3.5m.dylib -Dgnuinstall=ON -Dpython3=ON -Droofit=ON -Dminuit2=ON
 - https://matplotlib.org
-	- pip3 install matplotlib
+	- pip3 install matplotlib scipy
 - For latex style texting via plot.EnableLatex(True);
 	- http://www.tug.org/mactex/
 	- yum install texlive-*
