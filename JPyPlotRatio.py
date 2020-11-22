@@ -276,11 +276,6 @@ class JPyPlotRatio:
 				#kwargs["extent"] = kwargs.get("extent",(xe.GetXmin(),xe.GetXmax(),ye.GetXmin(),ye.GetXmax()));
 		return self.Add(panelIndex,arrays,plotType="2d",**kwargs);
 	
-	#deprecated
-	def AddTH2(self, panelIndex, h2, **kwargs):
-		print("WARNING: AddTH2 deprecated: use Add2D() to plot ROOT.TH2 objects (interchangeable)");
-		self.Add2D(panelIndex,h2,**kwargs);
-
 	def AddSyst(self, r1, ysys):
 		yofs = 0.0;
 		if isinstance(ysys,np.ndarray):
@@ -373,10 +368,15 @@ class JPyPlotRatio:
 				except ValueError:
 					raise ValueError("Histograms in the same panel must have identical dimensions.");
 			elif plot.plotType == "2d":
+				#set some defaults
+				if "cmap" not in plot.kwargs:
+					plot.kwargs["cmap"] = "RdBu_r";
+				if "levels" not in plot.kwargs:
+					plot.kwargs["levels"] = 10;
 				#pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,aspect="auto",cmap=plot.kwargs.get("cmap","rainbow"),norm=matplotlib.colors.LogNorm(1,plot.arrays.max()),**plot.kwargs);
 				#self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 				#pr = self.ax.flat[a0[plot.panelIndex]].contour(*plot.arrays,levels=10,norm=matplotlib.colors.LogNorm(1,plot.arrays[2].max()),colors='k',linewidths=0.2);
-				pr = self.ax.flat[a0[plot.panelIndex]].contourf(*plot.arrays,levels=10,**plot.kwargs);
+				pr = self.ax.flat[a0[plot.panelIndex]].contourf(*plot.arrays,**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
 				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram' or '2d'.".format(plot.plotType));
