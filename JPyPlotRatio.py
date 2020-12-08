@@ -418,13 +418,13 @@ class JPyPlotRatio:
 			systs1 = list(filter(lambda t: t[0] == robj[0],self.systs));
 			if len(systs1) > 0:
 				for sys in systs1:
-					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*yerr1);
+					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
 					terr1 += serr*serr;
 
 			systs2 = list(filter(lambda t: t[0] == robj[1],self.systs));
 			if len(systs2) > 0:
 				for sys in systs2:
-					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*yerr2);
+					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y2);
 					terr2 += serr*serr;
 
 			sa = max(x1[0],x2[0]);
@@ -437,8 +437,8 @@ class JPyPlotRatio:
 			else:
 				terr1 = np.sqrt(terr1);
 				terr2 = np.sqrt(terr2);
-				terr1d = interpolate.interp1d(x1,terr1)(sx);
-				terr2d = interpolate.interp1d(x2,terr2)(sx);
+				#terr1d = interpolate.interp1d(x1,terr1)(sx);
+				#terr2d = interpolate.interp1d(x2,terr2)(sx);
 
 			y1d = interpolate.interp1d(x1,y1)(sx);
 			yerr1d = interpolate.interp1d(x1,yerr1)(sx);
@@ -448,13 +448,9 @@ class JPyPlotRatio:
 			if self.ratioType == "ratio":
 				ratio = y1d/y2d;
 				ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
-				if self.ratioSystPlot:
-					ratio_err_syst = ratio*np.sqrt((terr2d/y2d)**2+(terr1d/y1d)**2);
 			elif self.ratioType == "diff":
 				ratio = y1d-y2d;
 				ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
-				if self.ratioSystPlot:
-					ratio_err_syst = np.sqrt(terr1d*terr1d+terr2d*terr2d);
 			else:
 				raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio' or 'diff'.".format(self.ratioType));
 
@@ -465,12 +461,10 @@ class JPyPlotRatio:
 			ratio_err = ratio_err[m];
 
 			panelIndex = self.plots[robj[0]].panelIndex;
+
 			if not np.ma.is_masked(a1[panelIndex]):
 				if self.plots[robj[0]].plotType == "data":
 					if plotStyle == "default":
-						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
-
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
@@ -480,35 +474,34 @@ class JPyPlotRatio:
 
 				elif self.plots[robj[0]].plotType == "theory":
 					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]].kwargs[k] for k in self.plots[robj[0]].kwargs if k not in ["linecolor"]});
+
 					if plotStyle == "errorbar":
 						p1.remove();
-
-						if self.ratioSystPlot:
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
 
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						#self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor=p1.get_edgecolor()[0],color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
 					elif plotStyle == "default":
-						if self.ratioSystPlot:
-							#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err_syst,ratio+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
-							p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,np.ones(ratio.size)-ratio_err_syst,np.ones(ratio.size)+ratio_err_syst,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
-							#self.ax.flat[a1[panelIndex]].errorbar(sx,ratio,ratio_err_syst,color="black");
-							#self.ax.flat[a1[panelIndex]].errorbar(sx,np.ones(ratio.size),ratio_err_syst,color="black");
-						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=p1.get_edgecolor()[0],linestyle=p1.get_linestyle()[0]);
 						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]].kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0]);
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
 
 		for sys in self.systs:
+			panelIndex = self.plots[sys[0]].panelIndex;
 			x1,y1,yerr1 = self.plots[sys[0]].arrays;
-			ax = self.ax.flat[a0[self.plots[sys[0]].panelIndex]];
+			ax = self.ax.flat[a0[panelIndex]];
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
-			for patch in SystematicsPatches(x1,y1,2*(sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1)+sys[2],patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
+			syst = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
+			for patch in SystematicsPatches(x1,y1,2*syst+sys[2],patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
 				ax.add_patch(patch);
+
+			if self.ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
+				syst_y1 = syst/y1;
+				terr_max = 1.0+syst_y1;
+				terr_min = 1.0-syst_y1;
+				p1 = self.ax.flat[a1[panelIndex]].fill_between(x1,terr_min,terr_max,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
 
 		#adjust ticks
 		for ra0,rap in zip(A0.flat,ap):
