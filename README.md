@@ -24,6 +24,17 @@ plot = JPyPlotRatio(panels=(1,2),
 
 Returns a JPyPlotRatio class instance.
 
+
+## Ratio Usages
+By default ratioSystPlot is False.
+Ratio() combines stat and syst, unless ratioSystPlot is enabled(`ratioSystPlot=True`).
+Make sure that `plot.AddSyst(dataPlotId,syst)` is in the code so that Ratio function knows about it.  
+
+In case of `plot.Ratio(model,data)` model/data 
+The ratio is based on the statical errors only both from the data and model (if `ratioSystPlot=True`), the systematic errors from the data (relative errors) will be drawn in bands around 1.
+
+## Parameter Description
+
 Parameter | Type | Description
 --- | --- | ---
 panels | Tuple (h, w) | Multipanel plot dimensions. Default (1,1) (one panel)
