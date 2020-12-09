@@ -434,11 +434,11 @@ class JPyPlotRatio:
 			if not self.ratioSystPlot:
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
 				yerr2 = np.sqrt(yerr2*yerr2+terr2);
-			else:
-				terr1 = np.sqrt(terr1);
-				terr2 = np.sqrt(terr2);
-				#terr1d = interpolate.interp1d(x1,terr1)(sx);
-				#terr2d = interpolate.interp1d(x2,terr2)(sx);
+			#else:
+			#	terr1 = np.sqrt(terr1);
+			#	terr2 = np.sqrt(terr2);
+			#	#terr1d = interpolate.interp1d(x1,terr1)(sx);
+			#	#terr2d = interpolate.interp1d(x2,terr2)(sx);
 
 			y1d = interpolate.interp1d(x1,y1)(sx);
 			yerr1d = interpolate.interp1d(x1,yerr1)(sx);
