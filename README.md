@@ -55,7 +55,9 @@ panelRatioPrivateScale | list `[panelIndex1,panelIndex2,...] | List of panels ra
 panelRatioPrivateRowBounds | Dict `{panelIndex:(ymin,ymax),...}` | Dictionary of y-limits for each panel ratio included in `panelPrivateScale`
 systPatchWidth | float | Fractional width of the systematic uncertainty patches with relation to the panel width. Default 0.065.
 xlabel | str or Dict `{colId:str, ...}` | xlabel for all panels (str), or dictionary of xlabels for each column
-ylabel | str | ylabel for all panels
+ylabel | str or Dict `{rowN:str, ...}` | ylabel for all panels
+ylabelRight | str or Dict `{rowN:str, ...}` | ylabel for all panels on the right side
+ylabelRatio | str or Dict `{rowN:str, ...}` | ylabel for the ratio panels (default "Ratio" or "Diff")
 axisLabelSize | int | Axis label text size. Default 16
 tickLabelSize | int | Tick labe size. Default 13
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels

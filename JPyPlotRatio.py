@@ -176,12 +176,17 @@ class JPyPlotRatio:
 					except (KeyError,TypeError):
 						pass;
 
-			if self.ratioType == "ratio":
+			ratioDefault = {"ratio":"Ratio","diff":"Diff"}[self.ratioType];
+			ratioLabel = kwargs.get('ylabelRatio',ratioDefault);
+			if isinstance(ratioLabel,str):
 				for ry in self.A1y:
-					self.ax.flat[ry].set_ylabel("Ratio",fontsize=self.axisLabelSize);
-			elif self.ratioType == "diff":
-				for ry in self.A1y:
-					self.ax.flat[ry].set_ylabel("Diff",fontsize=self.axisLabelSize);
+					self.ax.flat[ry].set_ylabel(ratioLabel,fontsize=self.axisLabelSize);
+			else:
+				for i,ry in enumerate(self.A1y):
+					try:
+						self.ax.flat[ry].set_ylabel(ratioLabel[i],fontsize=self.axisLabelSize);
+					except (KeyError,TypeError):
+						self.ax.flat[ry].set_ylabel(ratioDefault,fontsize=self.axisLabelSize);
 		except KeyError:
 			pass;
 
@@ -431,7 +436,7 @@ class JPyPlotRatio:
 			sb = min(x1[-1],x2[-1]);
 			sx = np.linspace(sa,sb,10*max(x1.size,x2.size));
 
-			if not self.ratioSystPlot:
+			if not self.ratioSystPlot and (len(systs1) > 0 or len(systs2) > 0):
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
 				yerr2 = np.sqrt(yerr2*yerr2+terr2);
 			#else:
@@ -448,6 +453,7 @@ class JPyPlotRatio:
 			if self.ratioType == "ratio":
 				ratio = y1d/y2d;
 				ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
+
 			elif self.ratioType == "diff":
 				ratio = y1d-y2d;
 				ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
