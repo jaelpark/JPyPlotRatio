@@ -285,6 +285,11 @@ class JPyPlotRatio:
 		yofs = 0.0;
 		if isinstance(ysys,np.ndarray):
 			yofs = np.zeros(ysys.size);
+		elif isinstance(ysys,tuple):
+			ye1,ye2 = ysys[1],ysys[0];
+			ysys = 0.5*(ye1+ye2);
+			yofs = 0.5*(ye2-ye1);
+			print(ysys,yofs);
 
 		elif "ROOT" in sys.modules:
 			if isinstance(ysys,ROOT.TGraphErrors):
@@ -500,7 +505,7 @@ class JPyPlotRatio:
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
 			syst = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
-			for patch in SystematicsPatches(x1,y1,2*syst+sys[2],patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
+			for patch in SystematicsPatches(x1,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
 				ax.add_patch(patch);
 
 			if self.ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
