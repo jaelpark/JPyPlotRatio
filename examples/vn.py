@@ -38,6 +38,9 @@ for i in range(0,8):
 	except KeyError:
 		pass;
 
+ax1 = plot.GetAxes(8); #get the last panel handle and add a long label manually
+ax1.text(0.05,0.32,"Pb-Pb $\\sqrt{s_\\mathrm{NN}}=5.02\\,\\mathrm{TeV}$\n$0.4<|\\eta|<0.8$, $0.2<p_\\mathrm{T}<5.0\\,\\mathrm{GeV/c}$",horizontalalignment="left",verticalalignment="center",transform=ax1.transAxes,size=9);
+
 plot.Plot();
 plot.Save("vn.pdf");
 plot.Show();

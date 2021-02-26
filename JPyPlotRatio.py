@@ -289,7 +289,6 @@ class JPyPlotRatio:
 			ye1,ye2 = ysys[1],ysys[0];
 			ysys = 0.5*(ye1+ye2);
 			yofs = 0.5*(ye2-ye1);
-			print(ysys,yofs);
 
 		elif "ROOT" in sys.modules:
 			if isinstance(ysys,ROOT.TGraphErrors):
