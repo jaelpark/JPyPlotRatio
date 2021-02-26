@@ -307,8 +307,8 @@ class JPyPlotRatio:
 		self.systs.append((r1,ysys,yofs));
 	
 	def Ratio(self, r1, r2, **kwargs):
-		if r1 == r2:
-			raise ValueError("Ratio(r1, r2) with r1 == r2");
+		#if r1 == r2:
+		#	raise ValueError("Ratio(r1, r2) with r1 == r2");
 		self.ratios.append((r1,r2,kwargs));
 	
 	def GetAxes(self, panelIndex):
