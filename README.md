@@ -60,6 +60,7 @@ ylabelRight | str or Dict `{rowN:str, ...}` | ylabel for all panels on the right
 ylabelRatio | str or Dict `{rowN:str, ...}` | ylabel for the ratio panels (default "Ratio" or "Diff")
 axisLabelSize | int | Axis label text size. Default 16
 tickLabelSize | int | Tick labe size. Default 13
+majorTicks | int | Number of major ticks on the x-axis. Default 6
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16

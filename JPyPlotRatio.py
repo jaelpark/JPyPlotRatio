@@ -79,7 +79,7 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
 		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*np.array(disableRatio,dtype=int)+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
@@ -111,6 +111,7 @@ class JPyPlotRatio:
 		self.ratioSystPlot = ratioSystPlot;
 		self.axisLabelSize = axisLabelSize;
 		self.tickLabelSize = tickLabelSize;
+		self.majorTicks = majorTicks;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
@@ -210,7 +211,7 @@ class JPyPlotRatio:
 			A.tick_params(which="minor",direction="in",length=2.8);
 			#A.xaxis.set_major_locator(plticker.MultipleLocator(1.0));
 			#A.xaxis.set_major_locator(plticker.AutoLocator());
-			A.xaxis.set_major_locator(plticker.MaxNLocator(6));
+			A.xaxis.set_major_locator(plticker.MaxNLocator(self.majorTicks));
 			A.xaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.yaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.xaxis.set_tick_params(labelsize=self.tickLabelSize);
@@ -367,15 +368,15 @@ class JPyPlotRatio:
 				if plot.label != "":
 					labels[plot.label,plot.labelLegendId] = pr;
 				pr = self.ax.flat[a0[plot.panelIndex]].bar(*plot.arrays[0:2],plot.arrays[0][1]-plot.arrays[0][0],yerr=plot.arrays[2],**plot.kwargs);
-				histogramMinY[plot.panelIndex] = np.minimum(plot.arrays[1],histogramMinY[plot.panelIndex]);
-				try:
-					for plot1 in histograms[plot.panelIndex]:
-						mask = plot1.arrays[1] < histogramMinY[plot.panelIndex];
-						self.ax.flat[a0[plot1.panelIndex]].bar(plot1.arrays[0][mask],plot1.arrays[1][mask],\
-							(plot1.arrays[0][1]-plot1.arrays[0][0]),yerr=plot1.arrays[2][mask],**plot1.kwargs);
-					histograms[plot.panelIndex].append(plot);
-				except ValueError:
-					raise ValueError("Histograms in the same panel must have identical dimensions.");
+				#histogramMinY[plot.panelIndex] = np.minimum(plot.arrays[1],histogramMinY[plot.panelIndex]);
+				#try:
+				#	for plot1 in histograms[plot.panelIndex]:
+				#		mask = plot1.arrays[1] < histogramMinY[plot.panelIndex];
+				#		self.ax.flat[a0[plot1.panelIndex]].bar(plot1.arrays[0][mask],plot1.arrays[1][mask],\
+				#			(plot1.arrays[0][1]-plot1.arrays[0][0]),yerr=plot1.arrays[2][mask],**plot1.kwargs);
+				#	histograms[plot.panelIndex].append(plot);
+				#except ValueError:
+				#	raise ValueError("Histograms in the same panel must have identical dimensions.");
 			elif plot.plotType == "2d":
 				#set some defaults
 				if "cmap" not in plot.kwargs:
@@ -625,4 +626,7 @@ class JPyPlotRatio:
 
 	def Show(self):
 		plt.show();
+
+	def Close():
+		plt.close();
 
