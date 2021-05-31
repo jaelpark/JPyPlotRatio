@@ -388,6 +388,8 @@ class JPyPlotRatio:
 				elif plot.plotType == "2d_histogram":
 					if "aspect" not in plot.kwargs:
 						plot.kwargs["aspect"] = "auto"; #auto is generally needed, so that the axes won't get messed up
+					elif "aspect" == "equal":
+						print("WARNING: \"equal\" aspect not supported. Use \"panelsize\" to explicitly control the aspect.");
 					pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
