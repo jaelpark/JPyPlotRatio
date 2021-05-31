@@ -236,7 +236,7 @@ class JPyPlotRatio:
 			#	raise ValueError("Not a valid plot object ROOT.TObject (label: {})".format(label));
 
 		#set uncertainty to zero if not provided
-		if len(arrays) < 3:
+		if len(arrays) < 3 and plotType != "2d":
 			arrays = (arrays[0],arrays[1],np.zeros(arrays[1].size));
 
 		try:
@@ -377,16 +377,18 @@ class JPyPlotRatio:
 				#	histograms[plot.panelIndex].append(plot);
 				#except ValueError:
 				#	raise ValueError("Histograms in the same panel must have identical dimensions.");
-			elif plot.plotType == "2d":
-				#set some defaults
+			elif "2d" in plot.plotType:
 				if "cmap" not in plot.kwargs:
 					plot.kwargs["cmap"] = "RdBu_r";
-				if "levels" not in plot.kwargs:
-					plot.kwargs["levels"] = 10;
-				#pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,aspect="auto",cmap=plot.kwargs.get("cmap","rainbow"),norm=matplotlib.colors.LogNorm(1,plot.arrays.max()),**plot.kwargs);
-				#self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
-				#pr = self.ax.flat[a0[plot.panelIndex]].contour(*plot.arrays,levels=10,norm=matplotlib.colors.LogNorm(1,plot.arrays[2].max()),colors='k',linewidths=0.2);
-				pr = self.ax.flat[a0[plot.panelIndex]].contourf(*plot.arrays,**plot.kwargs);
+				if plot.plotType == "2d" or plot.plotType == "2d_contour":
+					if "levels" not in plot.kwargs:
+						plot.kwargs["levels"] = 10;
+					pr = self.ax.flat[a0[plot.panelIndex]].contour(*plot.arrays,levels=10,norm=matplotlib.colors.LogNorm(1,plot.arrays[2].max()),colors='k',linewidths=0.2);
+					pr = self.ax.flat[a0[plot.panelIndex]].contourf(*plot.arrays,**plot.kwargs);
+				elif plot.plotType == "2d_histogram":
+					if "aspect" not in plot.kwargs:
+						plot.kwargs["aspect"] = "auto"; #auto is generally needed, so that the axes won't get messed up
+					pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
 				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram' or '2d'.".format(plot.plotType));
