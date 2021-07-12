@@ -79,10 +79,13 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
 		disableRatio = list(set(disableRatio));
-		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*np.array(disableRatio,dtype=int)+1);
-		self.p,self.ax = plt.subplots(2*panels[0]-len(disableRatio),panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
+		disableRatio = np.array(disableRatio,dtype=np.int32);
+		if np.any(disableRatio >= panels[0]):
+			raise ValueError("disableRatio: one or more indices exceeds the number of rows ({})".format(panels[0]));
+		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*disableRatio+1);
+		self.p,self.ax = plt.subplots(2*panels[0]-disableRatio.size,panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
 		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','plotType','kwargs']);
@@ -112,6 +115,7 @@ class JPyPlotRatio:
 		self.axisLabelSize = axisLabelSize;
 		self.tickLabelSize = tickLabelSize;
 		self.majorTicks = majorTicks;
+		self.majorTickMultiple = majorTickMultiple;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
@@ -122,7 +126,7 @@ class JPyPlotRatio:
 		self.Ay = self.A[:,0]; #y control column
 		self.A = np.delete(self.A,0,1); #delete control column
 
-		panelRowsWithRatio = list(set(range(panels[0]))-set(disableRatio));
+		panelRowsWithRatio = list(set(range(panels[0]))-set(disableRatio.tolist()));
 		cr = np.ones(self.s[0]-len(panelRowsWithRatio),dtype=int);
 		cr[panelRowsWithRatio] = 2;
 		ratioRows = [np.sum(cr[:t+1])-1 for t in panelRowsWithRatio];
@@ -209,15 +213,19 @@ class JPyPlotRatio:
 		for A in self.ax.flat:
 			A.tick_params(which="major",direction="in",length=8.0);
 			A.tick_params(which="minor",direction="in",length=2.8);
-			#A.xaxis.set_major_locator(plticker.MultipleLocator(1.0));
-			#A.xaxis.set_major_locator(plticker.AutoLocator());
-			A.xaxis.set_major_locator(plticker.MaxNLocator(self.majorTicks));
+			if self.majorTickMultiple:
+				A.xaxis.set_major_locator(plticker.MultipleLocator(10.0));
+			else:
+				#A.xaxis.set_major_locator(plticker.AutoLocator());
+				A.xaxis.set_major_locator(plticker.MaxNLocator(self.majorTicks));
 			A.xaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.yaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.xaxis.set_tick_params(labelsize=self.tickLabelSize);
 			A.yaxis.set_tick_params(labelsize=self.tickLabelSize);
 	
 	def Add(self, panelIndex, arrays, label="", labelLegendId=0, plotType="data", **kwargs):
+		if panelIndex >= self.a0.size:
+			raise ValueError("panelIndex exceeds the number of panels.");
 		if "ROOT" in sys.modules:
 			if isinstance(arrays,ROOT.TF1):
 				a = c_double(0);
