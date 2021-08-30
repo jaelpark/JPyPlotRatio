@@ -238,14 +238,17 @@ class JPyPlotRatio:
 				arrays = ROOT.TGraphErrors(arrays);
 			if isinstance(arrays,ROOT.TGraphErrors) or isinstance(arrays,ROOT.TObject):
 				x,y,_,yerr = TGraphErrorsToNumpy(arrays);
-				scale = kwargs.get("scale",1.0);
-				arrays = (x,scale*y,scale*yerr);
+				arrays = (x,y,yerr) if not kwargs.get("noError",False) else (x,y);
 			#elif isinstance(arrays,ROOT.TObject):
 			#	raise ValueError("Not a valid plot object ROOT.TObject (label: {})".format(label));
 
 		#set uncertainty to zero if not provided
 		if len(arrays) < 3 and plotType != "2d":
 			arrays = (arrays[0],arrays[1],np.zeros(arrays[1].size));
+
+		#if "scale" in kwargs:
+		#	scale = kwargs["scale"];
+		#	arrays = (arrays[0],scale*arrays[1],scale*arrays[2]);
 
 		try:
 			arrays = (arrays[0]+kwargs['xshift'],arrays[1],arrays[2]);
@@ -345,8 +348,14 @@ class JPyPlotRatio:
 
 		twins = {};
 
+		def labelWithScale(label):
+			return "{} ($\\times {:.2f}$)".format(label,scale) if np.abs(scale-1) > 1e-4 else label;
+
 		#plot the data
 		for plot in self.plots:
+			#apply scaling here so that ratio calculations won't get affected
+			scale = plot.kwargs.get('scale',1.0);
+			x,y,yerr = plot.arrays[0],scale*plot.arrays[1],scale*plot.arrays[2];
 			if plot.plotType == "data":
 				if plot.kwargs.get("skipAutolim",False):
 					try:
@@ -356,26 +365,27 @@ class JPyPlotRatio:
 						twins[plot.panelIndex] = at;
 				else:
 					at = self.ax.flat[a0[plot.panelIndex]];
-				pr = at.errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
+				pr = at.errorbar(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
 				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
-					labels[plot.label,plot.labelLegendId] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
 			elif plot.plotType == "theory":
-				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1]-plot.arrays[2],plot.arrays[1]+plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim"]});
+				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError"]});
 				pr = (p1,
-					self.ax.flat[a0[plot.panelIndex]].plot(*plot.arrays[0:2],color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
+					self.ax.flat[a0[plot.panelIndex]].plot(x,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
 				if plot.label != "":
-					labels[plot.label,plot.labelLegendId] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
 
 			elif plot.plotType == "fill_between":
-				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(plot.arrays[0],plot.arrays[1],plot.arrays[2],**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim"]});
+				#In this case, y is the lower limit, and yerr the upper.
+				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError"]});
 				if plot.label != "":
-					labels[plot.label,plot.labelLegendId] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
 
 			elif plot.plotType == "histogram":
 				if plot.label != "":
-					labels[plot.label,plot.labelLegendId] = pr;
-				pr = self.ax.flat[a0[plot.panelIndex]].bar(*plot.arrays[0:2],plot.arrays[0][1]-plot.arrays[0][0],yerr=plot.arrays[2],**plot.kwargs);
+					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
+				pr = self.ax.flat[a0[plot.panelIndex]].bar(x,y,x[1]-x[0],yerr=yerr,**plot.kwargs);
 				#histogramMinY[plot.panelIndex] = np.minimum(plot.arrays[1],histogramMinY[plot.panelIndex]);
 				#try:
 				#	for plot1 in histograms[plot.panelIndex]:
@@ -391,14 +401,15 @@ class JPyPlotRatio:
 				if plot.plotType == "2d" or plot.plotType == "2d_contour":
 					if "levels" not in plot.kwargs:
 						plot.kwargs["levels"] = 10;
-					pr = self.ax.flat[a0[plot.panelIndex]].contour(*plot.arrays,levels=10,norm=matplotlib.colors.LogNorm(1,plot.arrays[2].max()),colors='k',linewidths=0.2);
-					pr = self.ax.flat[a0[plot.panelIndex]].contourf(*plot.arrays,**plot.kwargs);
+					#In this case, yerr is z
+					pr = self.ax.flat[a0[plot.panelIndex]].contour(x,y,yerr,levels=10,norm=matplotlib.colors.LogNorm(1,yerr.max()),colors='k',linewidths=0.2);
+					pr = self.ax.flat[a0[plot.panelIndex]].contourf(x,y,yerr,**plot.kwargs);
 				elif plot.plotType == "2d_histogram":
 					if "aspect" not in plot.kwargs:
 						plot.kwargs["aspect"] = "auto"; #auto is generally needed, so that the axes won't get messed up
 					elif "aspect" == "equal":
 						print("WARNING: \"equal\" aspect not supported. Use \"panelsize\" to explicitly control the aspect.");
-					pr = self.ax.flat[a0[plot.panelIndex]].imshow(plot.arrays,**plot.kwargs);
+					pr = self.ax.flat[a0[plot.panelIndex]].imshow(x,**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
 				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram' or '2d'.".format(plot.plotType));
@@ -491,7 +502,11 @@ class JPyPlotRatio:
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**self.plots[robj[0]].kwargs);
+						dparams = self.plots[robj[0]].kwargs.copy();
+						dparams.update({k:robj[2][k] for k in robj[2]});
+						for k in ["scale","skipAutolim","noError","style"]:
+							dparams.pop(k,None);
+						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
@@ -606,12 +621,22 @@ class JPyPlotRatio:
 		#	#a.text(0.0,0.9,offsetStr,horizontalalignment="right",verticalalignment="center",transform=a.transAxes,size=13);
 
 		if isinstance(self.legendPanel,dict):
+			l1 = [self.legendPanel[k] for k in self.legendPanel];
 			for k in self.legendPanel:
 				lines = [labels[p] for p in labels if p[1] == k];
 				lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 				labels1 = [p[0] for p in labels if p[1] == k];
-				self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
+				l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
+				try:
+					#hack: add_artist must not be called for the last legend for particular panel
+					l1.remove(self.legendPanel[k]);
+					l1.index(self.legendPanel[k]);
+					self.ax.flat[a0[self.legendPanel[k]]].add_artist(l);
+				except:
+					pass;
 		else:
+			#one legend only
+			#TODO: create multiple legends with labelLegendId, not legendPanel?
 			lines = [labels[p] for p in labels];
 			lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 			labels1 = [p[0] for p in labels];

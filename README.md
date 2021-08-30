@@ -88,6 +88,7 @@ labelLegendId | int | Identifier of the legend to which the plot will be labeled
 plotType | str | "data" (default) or "theory". Data curve will be plotted as points and errorbars, while a theory curve will be shown as a colorband.
 scale | float | Scale factor for y values of the TGraphErrors object
 **plotParams | dict | Supplementary parameters passed to matplotlib `errorbar` or `fill_between` plotting methods depending on plotType.
+noError | bool | If true, the error from ROOT objects is not plotted, without having to explicitly remove it first. Default False
 
 A corresponding method is used to plot 2D graphs and histograms:
 
@@ -104,7 +105,7 @@ arrays | `np.ndarray`, `ROOT.TH2` | numpy 2d matrix to be plotted, or `ROOT.TH2`
 Ratio plots can be added by calling `plot.Ratio(...)`:
 
 ```python
-plot.Ratio(r1, r2, style)
+plot.Ratio(r1, r2, style, **plotParams)
 ```
 
 Parameter | Type | Description
@@ -112,6 +113,7 @@ Parameter | Type | Description
 r1 | int | Index of the numerator plot
 r2 | int | Index of the denominator plot. The plot style for the ratio will be inherited from this curve.
 style | str | Style for the ratio plot. Specify "errorbar" to always have point plot ratio curves
+**plotParams | dict | By default, the ratio plot will inherit its style properties from the main plot. However, those properties can be overriden by supplying them separately to `Ratio()`.
 
 Add systematic uncertainties with `plot.AddSyst(...)`:
 
