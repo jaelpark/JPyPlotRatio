@@ -66,7 +66,7 @@ panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
 panelLabelAlign | str | Text alignment for the panel labels, "left", "center", "right" (default).
-legendPanel | int or Dict `{legendId:panelIndex, ...}` | Index (indices) of the panel(s) where to pace the legend
+legendPanel | int or Dict `{legendId:panelIndex, ...}` | Index (indices) of the panel(s) where to pace the legend. Use dictionary if multiple legends is wanted.
 legendLoc | Tuple (x, y) or Dict `{legendId:(x,y), ...}` | Legend location(s) in the panel(s)
 legendSize | int | Legend text size. Default 10
 
