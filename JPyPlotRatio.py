@@ -349,7 +349,7 @@ class JPyPlotRatio:
 		twins = {};
 
 		def labelWithScale(label):
-			return "{} ($\\times {:.2f}$)".format(label,scale) if np.abs(scale-1) > 1e-4 else label;
+			return "{} ($\\times {:.1f}$)".format(label,scale) if np.abs(scale-1) > 1e-4 else label;
 
 		#plot the data
 		for plot in self.plots:
