@@ -243,7 +243,7 @@ class JPyPlotRatio:
 			#	raise ValueError("Not a valid plot object ROOT.TObject (label: {})".format(label));
 
 		#set uncertainty to zero if not provided
-		if len(arrays) < 3 and plotType != "2d":
+		if len(arrays) < 3 and "2d" not in plotType:
 			arrays = (arrays[0],arrays[1],np.zeros(arrays[1].size));
 
 		#if "scale" in kwargs:
@@ -355,7 +355,10 @@ class JPyPlotRatio:
 		for plot in self.plots:
 			#apply scaling here so that ratio calculations won't get affected
 			scale = plot.kwargs.get('scale',1.0);
-			x,y,yerr = plot.arrays[0],scale*plot.arrays[1],scale*plot.arrays[2];
+			try:
+				x,y,yerr = plot.arrays[0],scale*plot.arrays[1],scale*plot.arrays[2];
+			except IndexError:
+				x = plot.arrays[0]; #gotta be tuple of one
 			if plot.plotType == "data":
 				if plot.kwargs.get("skipAutolim",False):
 					try:
