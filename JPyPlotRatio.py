@@ -249,6 +249,9 @@ class JPyPlotRatio:
 		#if "scale" in kwargs:
 		#	scale = kwargs["scale"];
 		#	arrays = (arrays[0],scale*arrays[1],scale*arrays[2]);
+		for i,a in enumerate(arrays):
+			if not isinstance(a,np.ndarray):
+				raise ValueError("Array[{}] is not an np.ndarray, or its conversion failed.".format(i));
 
 		try:
 			arrays = (arrays[0]+kwargs['xshift'],arrays[1],arrays[2]);
@@ -373,7 +376,7 @@ class JPyPlotRatio:
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
 			elif plot.plotType == "theory":
-				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError"]});
+				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
 					self.ax.flat[a0[plot.panelIndex]].plot(x,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
 				if plot.label != "":
@@ -381,7 +384,7 @@ class JPyPlotRatio:
 
 			elif plot.plotType == "fill_between":
 				#In this case, y is the lower limit, and yerr the upper.
-				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError"]});
+				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
 
@@ -498,6 +501,8 @@ class JPyPlotRatio:
 			ratio_err = ratio_err[m];
 
 			panelIndex = self.plots[robj[0]].panelIndex;
+			
+			xshift = robj[2].get("xshift",0.0);
 
 			if not np.ma.is_masked(a1[panelIndex]):
 				if self.plots[robj[0]].plotType == "data":
@@ -507,14 +512,17 @@ class JPyPlotRatio:
 
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
-						for k in ["scale","skipAutolim","noError","style"]:
+						for k in ["scale","skipAutolim","noError","style","xshift"]:
 							dparams.pop(k,None);
-						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
+						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,2*ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
 				elif self.plots[robj[0]].plotType == "theory":
-					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]].kwargs[k] for k in self.plots[robj[0]].kwargs if k not in ["linecolor"]});
+					dparams = self.plots[robj[0]].kwargs.copy();
+					dparams.update({k:robj[2][k] for k in robj[2]});
+					#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]].kwargs[k] for k in self.plots[robj[0]].kwargs if k not in ["linecolor"]});
+					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx+xshift,ratio-ratio_err,ratio+ratio_err,**{k:dparams[k] for k in dparams if k not in ["linecolor","scale","xshift"]});
 
 					if plotStyle == "errorbar":
 						p1.remove();
@@ -522,15 +530,30 @@ class JPyPlotRatio:
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						self.ax.flat[a1[panelIndex]].errorbar(x1,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
+						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
 					elif plotStyle == "default":
-						self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]].kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0]);
+						dparams = self.plots[robj[0]].kwargs.copy();
+						dparams.update({k:robj[2][k] for k in robj[2]});
+						#for k in ["plotType","skipAutolim","noError","style"]:
+						#	dparams.pop(k,None);
+						if "color" not in dparams and \
+							"linecolor" not in dparams:
+							dparams['color'] = self.plots[robj[0]].kwargs.get("linecolor","black");
+						if "linestyle" not in dparams:
+							dparams['linestyle'] = p1.get_linestyle()[0];
+						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]].kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0]);#,**dparams);
+						self.ax.flat[a1[panelIndex]].plot(sx+xshift,ratio,**{k:dparams[k] for k in dparams if k not in ["linecolor","facecolor","edgecolor","scale","xshift"]});
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
 
 		for sys in self.systs:
 			panelIndex = self.plots[sys[0]].panelIndex;
 			x1,y1,yerr1 = self.plots[sys[0]].arrays;
+
+			scale = self.plots[sys[0]].kwargs.get('scale',1.0);
+			y1 *= scale;
+			yerr1 *= scale;
+
 			ax = self.ax.flat[a0[panelIndex]];
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
