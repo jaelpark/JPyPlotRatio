@@ -85,6 +85,7 @@ arrays | Tuple (x, y, yerr), `np.array` | Tuple of numpy arrays: x-values, y-val
 gr | `ROOT.TObject` | ROOT object to be plotted. Supported objects are `TGraphErrors`, `TH1`, and `TF1`.
 label | str | Label to use for the legend. Use same label for plots for which same legend entry is to be used.
 labelLegendId | int | Identifier of the legend to which the plot will be labeled
+labelOrder | int | Explicit ordering of legend labels
 plotType | str | "data" (default) or "theory". Data curve will be plotted as points and errorbars, while a theory curve will be shown as a colorband.
 scale | float | Scale factor for y values of the TGraphErrors object
 **plotParams | dict | Supplementary parameters passed to matplotlib `errorbar` or `fill_between` plotting methods depending on plotType.

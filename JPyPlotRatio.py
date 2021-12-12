@@ -88,7 +88,7 @@ class JPyPlotRatio:
 		self.p,self.ax = plt.subplots(2*panels[0]-disableRatio.size,panels[1]+1,sharex=sharex,figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
-		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','plotType','kwargs']);
+		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','labelOrder','plotType','kwargs']);
 
 		self.plots = [];
 		self.systs = [];
@@ -223,7 +223,7 @@ class JPyPlotRatio:
 			A.xaxis.set_tick_params(labelsize=self.tickLabelSize);
 			A.yaxis.set_tick_params(labelsize=self.tickLabelSize);
 	
-	def Add(self, panelIndex, arrays, label="", labelLegendId=0, plotType="data", **kwargs):
+	def Add(self, panelIndex, arrays, label="", labelLegendId=0, labelOrder=0, plotType="data", **kwargs):
 		if panelIndex >= self.a0.size:
 			raise ValueError("panelIndex exceeds the number of panels.");
 		if "ROOT" in sys.modules:
@@ -264,6 +264,7 @@ class JPyPlotRatio:
 			arrays=arrays,
 			label=label,
 			labelLegendId=labelLegendId,
+			labelOrder=labelOrder,
 			plotType=plotType,
 			kwargs=kwargs));
 		self.usedSet.add(panelIndex);
@@ -374,23 +375,23 @@ class JPyPlotRatio:
 				pr = at.errorbar(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
 				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
-					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 			elif plot.plotType == "theory":
 				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
 					self.ax.flat[a0[plot.panelIndex]].plot(x,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
 				if plot.label != "":
-					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
 			elif plot.plotType == "fill_between":
 				#In this case, y is the lower limit, and yerr the upper.
 				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				if plot.label != "":
-					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
 			elif plot.plotType == "histogram":
 				if plot.label != "":
-					labels[labelWithScale(plot.label),plot.labelLegendId] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 				pr = self.ax.flat[a0[plot.panelIndex]].bar(x,y,x[1]-x[0],yerr=yerr,**plot.kwargs);
 				#histogramMinY[plot.panelIndex] = np.minimum(plot.arrays[1],histogramMinY[plot.panelIndex]);
 				#try:
@@ -649,9 +650,10 @@ class JPyPlotRatio:
 		if isinstance(self.legendPanel,dict):
 			l1 = [self.legendPanel[k] for k in self.legendPanel];
 			for k in self.legendPanel:
-				lines = [labels[p] for p in labels if p[1] == k];
+				labelsSorted = sorted(list(labels),key=lambda p: p[2]);
+				lines = [labels[p] for p in labelsSorted if p[1] == k];
 				lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
-				labels1 = [p[0] for p in labels if p[1] == k];
+				labels1 = [p[0] for p in labelsSorted if p[1] == k];
 				l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
 				try:
 					#hack: add_artist must not be called for the last legend for particular panel
@@ -663,9 +665,10 @@ class JPyPlotRatio:
 		else:
 			#one legend only
 			#TODO: create multiple legends with labelLegendId, not legendPanel?
-			lines = [labels[p] for p in labels];
+			labelsSorted = sorted(list(labels),key=lambda p: p[2]);
+			lines = [labels[p] for p in labelsSorted];
 			lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
-			labels1 = [p[0] for p in labels];
+			labels1 = [p[0] for p in labelsSorted];
 			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc);
 
 		self.p.align_labels(self.ax.flat[self.A0y]);
