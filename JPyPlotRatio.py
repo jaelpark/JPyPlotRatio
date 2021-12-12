@@ -79,13 +79,13 @@ def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
 			raise ValueError("disableRatio: one or more indices exceeds the number of rows ({})".format(panels[0]));
 		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*disableRatio+1);
-		self.p,self.ax = plt.subplots(2*panels[0]-disableRatio.size,panels[1]+1,sharex='col',figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
+		self.p,self.ax = plt.subplots(2*panels[0]-disableRatio.size,panels[1]+1,sharex=sharex,figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
 		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','plotType','kwargs']);
@@ -681,7 +681,7 @@ class JPyPlotRatio:
 			r'\sansmath'                # actually tell tex to use it!
 			r'\usepackage{siunitx}',    # micro symbols
 			r'\sisetup{detect-all}',    # force siunitx to use the fonts
-			r'\renewcommand{\mathdefault}[1][]{}'
+			#r'\renewcommand{\mathdefault}[1][]{}'
 		];
 	
 	def Save(self, filename):
