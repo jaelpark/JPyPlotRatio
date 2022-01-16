@@ -74,6 +74,37 @@ def TH2ToNumpy(h):
 
 	return z,x,y;
 
+def RatioSamples(a1, a2, mode="ratio"):
+	x1,y1,yerr1 = a1;
+	x2,y2,yerr2 = a2;
+
+	sa = max(x1[0],x2[0]);
+	sb = min(x1[-1],x2[-1]);
+	sx = np.linspace(sa,sb,10*max(x1.size,x2.size));
+
+	y1d = interpolate.interp1d(x1,y1)(sx);
+	yerr1d = interpolate.interp1d(x1,yerr1)(sx);
+	y2d = interpolate.interp1d(x2,y2)(sx);
+	yerr2d = interpolate.interp1d(x2,yerr2)(sx);
+
+	if mode == "ratio":
+		ratio = y1d/y2d;
+		ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
+
+	elif mode == "diff":
+		ratio = y1d-y2d;
+		ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
+	else:
+		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio' or 'diff'.".format(mode));
+
+	m = ~np.isnan(ratio);
+	sx = sx[m];
+	
+	ratio = ratio[m];
+	ratio_err = ratio_err[m];
+
+	return sx,ratio,ratio_err;
+
 def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
 	h = 0.5*s;
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(x.size)];
@@ -376,6 +407,7 @@ class JPyPlotRatio:
 				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
+
 			elif plot.plotType == "theory":
 				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
@@ -467,39 +499,11 @@ class JPyPlotRatio:
 					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y2);
 					terr2 += serr*serr;
 
-			sa = max(x1[0],x2[0]);
-			sb = min(x1[-1],x2[-1]);
-			sx = np.linspace(sa,sb,10*max(x1.size,x2.size));
-
 			if not self.ratioSystPlot and (len(systs1) > 0 or len(systs2) > 0):
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
 				yerr2 = np.sqrt(yerr2*yerr2+terr2);
-			#else:
-			#	terr1 = np.sqrt(terr1);
-			#	terr2 = np.sqrt(terr2);
-			#	#terr1d = interpolate.interp1d(x1,terr1)(sx);
-			#	#terr2d = interpolate.interp1d(x2,terr2)(sx);
 
-			y1d = interpolate.interp1d(x1,y1)(sx);
-			yerr1d = interpolate.interp1d(x1,yerr1)(sx);
-			y2d = interpolate.interp1d(x2,y2)(sx);
-			yerr2d = interpolate.interp1d(x2,yerr2)(sx);
-
-			if self.ratioType == "ratio":
-				ratio = y1d/y2d;
-				ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
-
-			elif self.ratioType == "diff":
-				ratio = y1d-y2d;
-				ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
-			else:
-				raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio' or 'diff'.".format(self.ratioType));
-
-			m = ~np.isnan(ratio);
-			sx = sx[m];
-			
-			ratio = ratio[m];
-			ratio_err = ratio_err[m];
+			sx,ratio,ratio_err = RatioSamples((x1,y1,yerr1),(x2,y2,yerr2));
 
 			panelIndex = self.plots[robj[0]].panelIndex;
 			
@@ -653,8 +657,11 @@ class JPyPlotRatio:
 				labelsSorted = sorted(list(labels),key=lambda p: p[2]);
 				lines = [labels[p] for p in labelsSorted if p[1] == k];
 				lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
-				labels1 = [p[0] for p in labelsSorted if p[1] == k];
-				l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
+				try:
+					labels1 = [p[0] for p in labelsSorted if p[1] == k];
+					l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
+				except KeyError:
+					raise ValueError("Incompatible input legendPanel and legendLoc: the number of entries must be same.");
 				try:
 					#hack: add_artist must not be called for the last legend for particular panel
 					l1.remove(self.legendPanel[k]);
@@ -693,6 +700,6 @@ class JPyPlotRatio:
 	def Show(self):
 		plt.show();
 
-	def Close():
+	def Close(self):
 		plt.close();
 
