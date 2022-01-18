@@ -74,13 +74,13 @@ def TH2ToNumpy(h):
 
 	return z,x,y;
 
-def RatioSamples(a1, a2, mode="ratio"):
+def RatioSamples(a1, a2, mode="ratio", freq=10):
 	x1,y1,yerr1 = a1;
 	x2,y2,yerr2 = a2;
 
 	sa = max(x1[0],x2[0]);
 	sb = min(x1[-1],x2[-1]);
-	sx = np.linspace(sa,sb,10*max(x1.size,x2.size));
+	sx = np.linspace(sa,sb,freq*max(x1.size,x2.size));
 
 	y1d = interpolate.interp1d(x1,y1)(sx);
 	yerr1d = interpolate.interp1d(x1,yerr1)(sx);
@@ -508,7 +508,7 @@ class JPyPlotRatio:
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
 				yerr2 = np.sqrt(yerr2*yerr2+terr2);
 
-			sx,ratio,ratio_err = RatioSamples((x1,y1,yerr1),(x2,y2,yerr2));
+			sx,ratio,ratio_err = RatioSamples((x1,y1,yerr1),(x2,y2,yerr2),self.ratioType);
 
 			panelIndex = self.plots[robj[0]].panelIndex;
 			
