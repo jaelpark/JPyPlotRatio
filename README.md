@@ -4,13 +4,13 @@ Multipanel plotting class with ratio panels.
 ## Required packages
 - python3 (https://www.python.org)
 - ROOT (http://root.cern.ch)
-	- with cmake  -Dpython3="ON"
+	- with cmake -Dpython3="ON"
 	- OR in MAC
 		- base=/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.7
 		- cmake ../root-6.20.00 -DCMAKE_INSTALL_PREFIX={your build dir} -DPYTHON_EXECUTABLE=${base}/bin/python3 -DPYTHON_INCLUDE_DIR=${base}/Headers -DPYTHON_LIBRARY=${base}/lib/libpython3.5m.dylib -Dgnuinstall=ON -Dpython3=ON -Droofit=ON -Dminuit2=ON
 - https://matplotlib.org
 	- pip3 install matplotlib scipy
-- For latex style texting via plot.EnableLatex(True);
+- For latex style texting via `plot.EnableLatex(True);`
 	- http://www.tug.org/mactex/
 	- yum install texlive-*
 
@@ -23,7 +23,6 @@ plot = JPyPlotRatio(panels=(1,2),
 ```
 
 Returns a JPyPlotRatio class instance.
-
 
 ## Ratio Usages
 By default ratioSystPlot is False.
@@ -62,6 +61,7 @@ axisLabelSize | int | Axis label text size. Default 16
 tickLabelSize | int | Tick labe size. Default 13
 majorTicks | int | Maximum number of major ticks on the x-axis. Default 6
 majorTickMultiple | int | Multiples of the major ticks. By default not used (None).
+logScale | bool | Apply logarithmic scale to each panel.
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
@@ -73,7 +73,7 @@ legendSize | int | Legend text size. Default 10
 Plot curves with `plot.Add(...)`. Input curve should be either as numpy arrays, or ROOT objects. `Add` automatically converts a TGraphErrors and TH1 object to numpy arrays and plots them.
 
 ```python
-plotIndex = plot.Add(panelIndex, arrays=(x, y, yerr) or gr=ROOT.TObject, label="", labelLegendId=0, plotType="data", **plotParams)
+plotIndex = plot.Add(panelIndex, arrays=(x,y,yerr) or gr=ROOT.TObject, label="", labelLegendId=0, plotType="data", **plotParams)
 ```
 
 Returns the index for the newly added plot (int), which can be used as a reference for ratio plotting.
@@ -130,4 +130,30 @@ r1 | int | Index of the plot to add systematic uncertainty patches
 ysys | float, `np.array`, `ROOT.TObject` | (Relative) systematic uncertainty. If float, the value will be multiplied by the y-values of the curve, else if numpy array, the values from this array will be used directly. ROOT objects will be converted to a numpy array before plotting.
 
 Finally, create the plot by calling `plot.Plot()`. A plot can be saved with `plot.Save(filename)`, and shown in a window wit `plot.Show()`.
+
+## Additional functions
+
+```python
+x,y,xerr,yerr = TGraphErrorsToNumpy(gr)
+```
+
+Convert `TGraphErrors` to numpy arrays.
+
+```python
+x,y,xerr1,xerr2,yerr1,yerr2 = TGraphAsymmErrorsToNumpy(gr)
+```
+
+Convert `TGraphAsymmErrors` to numpy arrays.
+
+```python
+z,x,y = TH2ToNumpy(h)
+```
+
+Convert `TH2` to numpy arrays: 2d-array `z`, and bin arrays `x` and `y`.
+
+```python
+x,ratio,ratio_err = RatioSamples((x1,y1,yerr1), (x2,y2,yerr2), mode="ratio", freq=10)
+```
+
+Calculate ratio or difference between two (unmatching) graphs of data. The sample frequency (default 10) determines the number of sample points multiplied by the size of the largest array of data.
 
