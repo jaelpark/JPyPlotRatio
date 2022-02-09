@@ -256,8 +256,9 @@ class JPyPlotRatio:
 			A.yaxis.set_tick_params(labelsize=self.tickLabelSize);
 
 		if self.logScale:
-			for A in self.ax.flat:
-				A.set_yscale("log");
+			#for A in self.ax.flat:
+			for panelIndex in np.concatenate((self.A0y.reshape(-1),self.a0)):
+				self.ax.flat[panelIndex].set_yscale("log");
 	
 	def Add(self, panelIndex, arrays, label="", labelLegendId=0, labelOrder=0, plotType="data", **kwargs):
 		if panelIndex >= self.a0.size:
