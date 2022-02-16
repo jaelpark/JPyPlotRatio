@@ -119,7 +119,7 @@ class JPyPlotRatio:
 		self.p,self.ax = plt.subplots(2*panels[0]-disableRatio.size,panels[1]+1,sharex=sharex,figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
-		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','labelOrder','plotType','kwargs']);
+		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','labelOrder','plotType','xshift','kwargs']);
 
 		self.plots = [];
 		self.systs = [];
@@ -291,10 +291,10 @@ class JPyPlotRatio:
 				raise ValueError("Array[{}] is not an np.ndarray, or its conversion failed.".format(i));
 
 		try:
-			arrays = (arrays[0]+kwargs['xshift'],arrays[1],arrays[2]);
+			xshift = kwargs['xshift'];
 			del kwargs['xshift'];
 		except KeyError:
-			pass;
+			xshift = 0.0;
 
 		self.plots.append(self.PlotEntry(
 			panelIndex=panelIndex,
@@ -303,6 +303,7 @@ class JPyPlotRatio:
 			labelLegendId=labelLegendId,
 			labelOrder=labelOrder,
 			plotType=plotType,
+			xshift=xshift,
 			kwargs=kwargs));
 		self.usedSet.add(panelIndex);
 
@@ -409,28 +410,28 @@ class JPyPlotRatio:
 						twins[plot.panelIndex] = at;
 				else:
 					at = self.ax.flat[a0[plot.panelIndex]];
-				pr = at.errorbar(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
+				pr = at.errorbar(x+plot.xshift,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
 				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
 			elif plot.plotType == "theory":
-				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
+				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
-					self.ax.flat[a0[plot.panelIndex]].plot(x,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
+					self.ax.flat[a0[plot.panelIndex]].plot(x+plot.xshift,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
 			elif plot.plotType == "fill_between":
 				#In this case, y is the lower limit, and yerr the upper.
-				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
+				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
 			elif plot.plotType == "histogram":
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
-				pr = self.ax.flat[a0[plot.panelIndex]].bar(x,y,x[1]-x[0],yerr=yerr,**plot.kwargs);
+				pr = self.ax.flat[a0[plot.panelIndex]].bar(x+plot.xshift,y,x[1]-x[0],yerr=yerr,**plot.kwargs);
 				#histogramMinY[plot.panelIndex] = np.minimum(plot.arrays[1],histogramMinY[plot.panelIndex]);
 				#try:
 				#	for plot1 in histograms[plot.panelIndex]:
@@ -513,7 +514,8 @@ class JPyPlotRatio:
 
 			panelIndex = self.plots[robj[0]].panelIndex;
 			
-			xshift = robj[2].get("xshift",0.0);
+			#xshift = robj[2].get("xshift",0.0);
+			xshift = self.plots[robj[0]].xshift;
 
 			if not np.ma.is_masked(a1[panelIndex]):
 				if self.plots[robj[0]].plotType == "data":
@@ -560,6 +562,7 @@ class JPyPlotRatio:
 		for sys in self.systs:
 			panelIndex = self.plots[sys[0]].panelIndex;
 			x1,y1,yerr1 = self.plots[sys[0]].arrays;
+			xshift = self.plots[sys[0]].xshift;
 
 			scale = self.plots[sys[0]].kwargs.get('scale',1.0);
 			y1 *= scale;
@@ -569,14 +572,14 @@ class JPyPlotRatio:
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
 			syst = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
-			for patch in SystematicsPatches(x1,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
+			for patch in SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
 				ax.add_patch(patch);
 
 			if self.ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
 				syst_y1 = syst/y1;
 				terr_max = 1.0+syst_y1;
 				terr_min = 1.0-syst_y1;
-				p1 = self.ax.flat[a1[panelIndex]].fill_between(x1,terr_min,terr_max,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
+				p1 = self.ax.flat[a1[panelIndex]].fill_between(x1+xshift,terr_min,terr_max,facecolor=self.plots[sys[0]].kwargs["color"],edgecolor="black",alpha=0.25);
 
 		#adjust ticks
 		for ra0,rap in zip(A0.flat,ap):
