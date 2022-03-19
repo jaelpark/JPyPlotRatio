@@ -683,11 +683,11 @@ class JPyPlotRatio:
 		self.p.align_labels(self.ax.flat[self.A1y]);
 		self.p.align_ylabels(self.ax[:,0]);
 
-	def EnableLatex(self, b):
+	def EnableLatex(self, b, eulergreek=False):
 		matplotlib.rcParams["text.usetex"] = b;
 		matplotlib.rcParams['text.latex.preamble'] = [
 			r'\usepackage{tgheros}',    # helvetica font
-			r'\usepackage{sansmath}',   # math-font matching helvetica
+			r'\usepackage[EULERGREEK]{sansmath}' if eulergreek else r'\usepackage{sansmath}',   # math-font matching helvetica
 			r'\sansmath'                # actually tell tex to use it!
 			r'\usepackage{siunitx}',    # micro symbols
 			r'\sisetup{detect-all}',    # force siunitx to use the fonts
