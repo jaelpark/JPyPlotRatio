@@ -47,6 +47,7 @@ ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ra
 ratioIndicator | bool | If True, a dashed line will be drawn to indicate a zero difference line
 ratioType | str | Difference type "ratio" (a/b) or "diff" (a-b)
 ratioSystPlot | bool | Plot systematics separately in ratio plot
+systLegend | bool | Draw systematic error patches in legend. Default true
 panelScaling | Dict `{panelIndex:scale, ...}` | Dictionary of scale factors for the plots in each panel
 panelPrivateScale | list `[panelIdex1,panelIndex2,...] | List of panels that should have their own y-axis scale instead of a shared one
 panelPrivateRowBounds | Dict `{panelIndex:(ymin,ymax),...}` | Dictionary of y-limits for each panel included in `panelPrivateScale`
