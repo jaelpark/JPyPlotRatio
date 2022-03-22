@@ -105,9 +105,9 @@ def RatioSamples(a1, a2, mode="ratio", freq=10):
 
 	return sx,ratio,ratio_err;
 
-def SystematicsPatches(x,y,yerr,s,fc="#FF9848",ec="#CC4F1B",alpha=0.5):
+def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kwargs):
 	h = 0.5*s;
-	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5) for j in range(x.size)];
+	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 class JPyPlotRatio:
 	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
@@ -394,7 +394,7 @@ class JPyPlotRatio:
 			return "{} ($\\times {:.1f}$)".format(label,scale) if np.abs(scale-1) > 1e-4 else label;
 
 		#plot the data
-		for plot in self.plots:
+		for plotIndex,plot in enumerate(self.plots):
 			#apply scaling here so that ratio calculations won't get affected
 			scale = plot.kwargs.get('scale',1.0);
 			try:
@@ -410,21 +410,21 @@ class JPyPlotRatio:
 						twins[plot.panelIndex] = at;
 				else:
 					at = self.ax.flat[a0[plot.panelIndex]];
-				pr = at.errorbar(x+plot.xshift,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
+				pr = at.errorbar(x+plot.xshift,y,yerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
 				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
 			elif plot.plotType == "theory":
-				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
+				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,zorder=plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
-					self.ax.flat[a0[plot.panelIndex]].plot(x+plot.xshift,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0])[0]);
+					self.ax.flat[a0[plot.panelIndex]].plot(x+plot.xshift,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0],zorder=plotIndex)[0]);
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
 			elif plot.plotType == "fill_between":
 				#In this case, y is the lower limit, and yerr the upper.
-				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y,yerr,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
+				pr = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y,yerr,zorder=plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
 
@@ -572,7 +572,7 @@ class JPyPlotRatio:
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
 			syst = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
-			for patch in SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25):
+			for patch in SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25,zorder=len(self.plots)+sys[0]):
 				ax.add_patch(patch);
 
 			if self.ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
