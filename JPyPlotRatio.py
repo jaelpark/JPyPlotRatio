@@ -692,18 +692,20 @@ class JPyPlotRatio:
 		self.p.align_labels(self.ax.flat[self.A1y]);
 		self.p.align_ylabels(self.ax[:,0]);
 
-	def EnableLatex(self, b, eulergreek=False):
+	def EnableLatex(self, b, font="latex", **kwargs):
 		matplotlib.rcParams["text.usetex"] = b;
-		matplotlib.rcParams['mathtext.fontset'] = 'stix';
-		matplotlib.rcParams['font.family'] = 'STIXGeneral';
-		#matplotlib.rcParams['text.latex.preamble'] = [
-		#	r'\usepackage{tgheros}',    # helvetica font
-		#	r'\usepackage[EULERGREEK]{sansmath}' if eulergreek else r'\usepackage{sansmath}',   # math-font matching helvetica
-		#	r'\sansmath'                # actually tell tex to use it!
-		#	r'\usepackage{siunitx}',    # micro symbols
-		#	r'\sisetup{detect-all}',    # force siunitx to use the fonts
-		#	#r'\renewcommand{\mathdefault}[1][]{}'
-		#];
+		if font == "latex":
+			matplotlib.rcParams['mathtext.fontset'] = 'stix';
+			matplotlib.rcParams['font.family'] = 'STIXGeneral';
+		else:
+			matplotlib.rcParams['text.latex.preamble'] = [
+				r'\usepackage{tgheros}',    # helvetica font
+				r'\usepackage[EULERGREEK]{sansmath}' if kwargs.get('eulergreek',False) else r'\usepackage{sansmath}',   # math-font matching helvetica
+				r'\sansmath'                # actually tell tex to use it!
+				r'\usepackage{siunitx}',    # micro symbols
+				r'\sisetup{detect-all}',    # force siunitx to use the fonts
+				#r'\renewcommand{\mathdefault}[1][]{}'
+			];
 	
 	def Save(self, filename):
 		self.p.savefig(filename,bbox_inches="tight");
