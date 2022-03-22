@@ -110,7 +110,7 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -143,6 +143,7 @@ class JPyPlotRatio:
 		self.ratioIndicator = ratioIndicator;
 		self.ratioType = ratioType;
 		self.ratioSystPlot = ratioSystPlot;
+		self.systLegend = systLegend;
 		self.axisLabelSize = axisLabelSize;
 		self.tickLabelSize = tickLabelSize;
 		self.majorTicks = majorTicks;
@@ -413,7 +414,10 @@ class JPyPlotRatio:
 				pr = at.errorbar(x+plot.xshift,y,yerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
 				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
-					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
+					if self.systLegend and any([sys[0] == plotIndex for sys in self.systs]):
+						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = (patches.Patch(facecolor=plot.kwargs["color"],edgecolor="black",alpha=0.25),pr[0]);
+					else:
+						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr[0];
 
 			elif plot.plotType == "theory":
 				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,zorder=plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
