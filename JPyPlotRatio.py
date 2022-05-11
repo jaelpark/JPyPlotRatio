@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.ticker as plticker
 import matplotlib.container as container
+from matplotlib.path import Path
 
 import scipy
 from scipy import interpolate
@@ -74,12 +75,12 @@ def TH2ToNumpy(h):
 
 	return z,x,y;
 
-def RatioSamples(a1, a2, mode="ratio", freq=10):
+def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 	x1,y1,yerr1 = a1;
 	x2,y2,yerr2 = a2;
 
-	sa = max(x1[0],x2[0]);
-	sb = min(x1[-1],x2[-1]);
+	sa = np.max(np.array([x1[0],x2[0]]));
+	sb = np.min(np.array([x1[-1],x2[-1]]));
 	sx = np.linspace(sa,sb,freq*max(x1.size,x2.size));
 
 	y1d = interpolate.interp1d(x1,y1)(sx);
@@ -97,7 +98,7 @@ def RatioSamples(a1, a2, mode="ratio", freq=10):
 	else:
 		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio' or 'diff'.".format(mode));
 
-	m = ~np.isnan(ratio);
+	m = np.bitwise_and(~np.isnan(ratio),ratioRange[0] <= sx,sx < ratioRange[1]);
 	sx = sx[m];
 	
 	ratio = ratio[m];
@@ -110,7 +111,7 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, logScale=False, limitToZero=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -149,6 +150,7 @@ class JPyPlotRatio:
 		self.majorTicks = majorTicks;
 		self.majorTickMultiple = majorTickMultiple;
 		self.logScale = logScale;
+		self.limitToZero = limitToZero;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
@@ -180,6 +182,11 @@ class JPyPlotRatio:
 		#self.A1y = np.delete(self.Ay,2*np.arange(self.s[1]),0);
 		#self.A1 = np.delete(self.A,2*np.arange(self.s[1]),0);
 		#self.a1 = self.A1.reshape(-1); #ratio indices (flat)
+
+		#create a bar-arrow marker
+		verts = [(-1,0),(1,0),(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,0)];
+		codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
+		self.limitMarkerPath = Path(verts,codes);#.transformed(at.transAxes);
 
 		for i,a in enumerate(self.ax[0,1:]):
 			try:
@@ -351,6 +358,7 @@ class JPyPlotRatio:
 				yofs = np.zeros(ysys.size);
 			elif isinstance(ysys,ROOT.TGraphAsymmErrors):
 				_,_,_,_,ye1,ye2 = TGraphAsymmErrorsToNumpy(ysys);
+				#TODO: ye1 and ye2 can be both given to errorbar()
 				ysys = 0.5*(ye1+ye2);
 				yofs = 0.5*(ye2-ye1);
 
@@ -411,8 +419,12 @@ class JPyPlotRatio:
 						twins[plot.panelIndex] = at;
 				else:
 					at = self.ax.flat[a0[plot.panelIndex]];
+				if self.limitToZero:
+					ll = y-yerr > 0;
+					zx,zy,zyerr = x[~ll],y[~ll],yerr[~ll];
+					at.errorbar(zx+plot.xshift,zy+zyerr,marker=self.limitMarkerPath,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
+					x,y,yerr = x[ll],y[ll],yerr[ll];
 				pr = at.errorbar(x+plot.xshift,y,yerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
-				#pr = self.ax.flat[a0[plot.panelIndex]].errorbar(*plot.arrays,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim"]});
 				if plot.label != "":
 					if self.systLegend and any([sys[0] == plotIndex for sys in self.systs]):
 						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = (patches.Patch(facecolor=plot.kwargs["color"],edgecolor="black",alpha=0.25),pr[0]);
@@ -445,6 +457,11 @@ class JPyPlotRatio:
 				#	histograms[plot.panelIndex].append(plot);
 				#except ValueError:
 				#	raise ValueError("Histograms in the same panel must have identical dimensions.");
+			elif plot.plotType == "upperLimit":
+				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(x+plot.xshift,y+yerr,marker=self.limitMarkerPath,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
+				if plot.label != "":
+					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
+
 			elif "2d" in plot.plotType:
 				if "cmap" not in plot.kwargs:
 					plot.kwargs["cmap"] = "RdBu_r";
@@ -462,7 +479,7 @@ class JPyPlotRatio:
 					pr = self.ax.flat[a0[plot.panelIndex]].imshow(x,**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 			else:
-				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram' or '2d'.".format(plot.plotType));
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram', 'upperLimit' or '2d'.".format(plot.plotType));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
@@ -494,6 +511,7 @@ class JPyPlotRatio:
 			x2,y2,yerr2 = self.plots[robj[1]].arrays;
 
 			plotStyle = robj[2].get("style","default");
+			ratioRange = robj[2].get("xlim",(-np.inf,np.inf));
 
 			terr1 = np.zeros(yerr1.size);
 			terr2 = np.zeros(yerr2.size);
@@ -514,22 +532,23 @@ class JPyPlotRatio:
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
 				yerr2 = np.sqrt(yerr2*yerr2+terr2);
 
-			sx,ratio,ratio_err = RatioSamples((x1,y1,yerr1),(x2,y2,yerr2),self.ratioType);
+			sx,ratio,ratio_err = RatioSamples((x1,y1,yerr1),(x2,y2,yerr2),self.ratioType,ratioRange=ratioRange);
+			if robj[2].get("noError",False):
+				ratio_err = np.zeros(ratio.size);
 
 			panelIndex = self.plots[robj[0]].panelIndex;
 			
-			#xshift = robj[2].get("xshift",0.0);
 			xshift = self.plots[robj[0]].xshift;
 
 			if not np.ma.is_masked(a1[panelIndex]):
 				if self.plots[robj[0]].plotType == "data":
 					if plotStyle == "default":
-						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
-						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
+						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False)(x1);
+						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False)(x1);
 
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
-						for k in ["scale","skipAutolim","noError","style","xshift"]:
+						for k in ["scale","skipAutolim","noError","style","xlim","xshift"]:
 							dparams.pop(k,None);
 						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,2*ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
 					else:

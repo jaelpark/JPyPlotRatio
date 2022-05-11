@@ -63,6 +63,7 @@ tickLabelSize | int | Tick labe size. Default 13
 majorTicks | int | Maximum number of major ticks on the x-axis. Default 6
 majorTickMultiple | int | Multiples of the major ticks. By default not used (None).
 logScale | bool | Apply logarithmic scale to each panel.
+limitToZero | bool | Draw data points which error bar goes below zero as a upper limit marker. Default false
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
@@ -107,7 +108,7 @@ arrays | `np.ndarray`, `ROOT.TH2` | numpy 2d matrix to be plotted, or `ROOT.TH2`
 Ratio plots can be added by calling `plot.Ratio(...)`:
 
 ```python
-plot.Ratio(r1, r2, style, **plotParams)
+plot.Ratio(r1, r2, style, xlim, noError, **plotParams)
 ```
 
 Parameter | Type | Description
@@ -115,6 +116,8 @@ Parameter | Type | Description
 r1 | int | Index of the numerator plot
 r2 | int | Index of the denominator plot. The plot style for the ratio will be inherited from this curve.
 style | str | Style for the ratio plot. Specify "errorbar" to always have point plot ratio curves
+xlim | tuple | Set the x-limits of the ratio graph. Default `(-np.inf,np.inf)`
+noError | bool | Disable error bars for the ratio if true. Default false
 **plotParams | dict | By default, the ratio plot will inherit its style properties from the main plot. However, those properties can be overriden by supplying them separately to `Ratio()`.
 
 Add systematic uncertainties with `plot.AddSyst(...)`:
