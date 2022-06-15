@@ -138,8 +138,8 @@ class JPyPlotRatio:
 		self.panelLabelLoc = panelLabelLoc;
 		self.panelLabelSize = panelLabelSize;
 		self.panelLabelAlign = panelLabelAlign;
-		self.rowBounds = rowBounds;
-		self.rowBoundsMax = rowBoundsMax;
+		self.rowBounds = {0:rowBounds} if type(rowBounds) == tuple else rowBounds;
+		self.rowBoundsMax = {0:rowBoundsMax} if type(rowBoundsMax) == tuple else rowBoundsMax;
 		self.ratioBounds = ratioBounds;
 		self.ratioIndicator = ratioIndicator;
 		self.ratioType = ratioType;
@@ -189,10 +189,14 @@ class JPyPlotRatio:
 		self.limitMarkerPath = Path(verts,codes);#.transformed(at.transAxes);
 
 		for i,a in enumerate(self.ax[0,1:]):
+			a.xaxis.set_ticks_position('both');
 			try:
 				a.set_xlim(colBounds[i]);
 			except KeyError:
 				pass;
+
+		for i,a in enumerate(self.ax[0:,-1]):
+			a.yaxis.set_ticks_position('both');
 
 		try:
 			if isinstance(kwargs['xlabel'],str):
@@ -595,7 +599,9 @@ class JPyPlotRatio:
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
 			syst = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
-			for patch in SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25,zorder=len(self.plots)+sys[0]):
+			for i,patch in enumerate(SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25,zorder=len(self.plots)+sys[0])):
+				if self.limitToZero and y1[i]-yerr1[i] <= 0:
+					continue;
 				ax.add_patch(patch);
 
 			if self.ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
