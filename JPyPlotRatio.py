@@ -42,8 +42,6 @@ def TGraphAsymmErrorsToNumpy(gr):
 	n = gr.GetN();
 	x,y,xerr1,xerr2,yerr1,yerr2 = [np.empty(n) for i in range(6)];
 
-	#a = ROOT.Double(0);
-	#b = ROOT.Double(0);
 	a = c_double(0);
 	b = c_double(0);
 	for i in range(0,n):
@@ -464,7 +462,7 @@ class JPyPlotRatio:
 			elif plot.plotType == "upperLimit":
 				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(x+plot.xshift,y+yerr,marker=self.limitMarkerPath,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
 				if plot.label != "":
-					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr;
+					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = plt.plot([1],linestyle="-",color=plot.kwargs["color"])[0];#pr;
 
 			elif "2d" in plot.plotType:
 				if "cmap" not in plot.kwargs:
