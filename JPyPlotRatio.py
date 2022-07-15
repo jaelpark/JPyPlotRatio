@@ -21,6 +21,19 @@ except ModuleNotFoundError:
 
 matplotlib.rcParams["axes.linewidth"] = 1.5;
 
+
+def TGraphToNumpy(gr):
+	n = gr.GetN();
+	x,y = [np.empty(n) for i in range(2)];
+	a = c_double(0);
+	b = c_double(0);
+	for i in range(0,n):
+		gr.GetPoint(i,a,b);
+		x[i] = a.value;
+		y[i] = b.value;
+
+	return x,y;
+
 def TGraphErrorsToNumpy(gr):
 	n = gr.GetN();
 	x,y,xerr,yerr = [np.empty(n) for i in range(4)];
@@ -182,9 +195,12 @@ class JPyPlotRatio:
 		#self.a1 = self.A1.reshape(-1); #ratio indices (flat)
 
 		#create a bar-arrow marker
-		verts = [(-1,0),(1,0),(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,0)];
-		codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
+		#verts = [(-1,0),(1,0),(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,0)];
+		#codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
+		verts = [(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,0)];
+		codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
 		self.limitMarkerPath = Path(verts,codes);#.transformed(at.transAxes);
+		self.limitMarkerPathFull = Path([(-1,0),(1,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
 
 		for i,a in enumerate(self.ax[0,1:]):
 			a.xaxis.set_ticks_position('both');
@@ -262,6 +278,10 @@ class JPyPlotRatio:
 				A.xaxis.set_major_locator(plticker.MaxNLocator(self.majorTicks));
 			A.xaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.yaxis.set_minor_locator(plticker.AutoMinorLocator(5));
+			#FIXME - minor ticks disappear with log scale
+			#locmin = matplotlib.ticker.LogLocator(base=10.0, subs=(0.1,0.2,0.4,0.6,0.8,1,2,4,6,8,10));
+			#A.yaxis.set_minor_locator(locmin);
+			#A.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter());
 			A.xaxis.set_tick_params(labelsize=self.tickLabelSize);
 			A.yaxis.set_tick_params(labelsize=self.tickLabelSize);
 
@@ -363,6 +383,8 @@ class JPyPlotRatio:
 				#TODO: ye1 and ye2 can be both given to errorbar()
 				ysys = 0.5*(ye1+ye2);
 				yofs = 0.5*(ye2-ye1);
+			elif isinstance(ysys,ROOT.TGraph):
+				_,ysys = TGraphToNumpy(ysys);
 
 		if isinstance(ysys,np.ndarray):
 			if ysys.size != self.plots[r1].arrays[0].size:
@@ -424,7 +446,7 @@ class JPyPlotRatio:
 				if self.limitToZero:
 					ll = y-yerr > 0;
 					zx,zy,zyerr = x[~ll],y[~ll],yerr[~ll];
-					at.errorbar(zx+plot.xshift,zy+zyerr,marker=self.limitMarkerPath,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
+					at.errorbar(zx+plot.xshift,zy+zyerr,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
 					x,y,yerr = x[ll],y[ll],yerr[ll];
 				pr = at.errorbar(x+plot.xshift,y,yerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
 				if plot.label != "":
@@ -460,7 +482,7 @@ class JPyPlotRatio:
 				#except ValueError:
 				#	raise ValueError("Histograms in the same panel must have identical dimensions.");
 			elif plot.plotType == "upperLimit":
-				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(x+plot.xshift,y+yerr,marker=self.limitMarkerPath,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
+				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(x+plot.xshift,y+yerr,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
 				if plot.label != "":
 					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = plt.plot([1],linestyle="-",color=plot.kwargs["color"])[0];#pr;
 

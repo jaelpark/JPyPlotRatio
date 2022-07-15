@@ -89,10 +89,22 @@ gr | `ROOT.TObject` | ROOT object to be plotted. Supported objects are `TGraphEr
 label | str | Label to use for the legend. Use same label for plots for which same legend entry is to be used.
 labelLegendId | int | Identifier of the legend to which the plot will be labeled
 labelOrder | int | Explicit ordering of legend labels
-plotType | str | "data" (default) or "theory". Data curve will be plotted as points and errorbars, while a theory curve will be shown as a colorband.
+plotType | str | Plotting method and type. See table below for the available options. Default "data"
 scale | float | Scale factor for y values of the TGraphErrors object
-**plotParams | dict | Supplementary parameters passed to matplotlib `errorbar` or `fill_between` plotting methods depending on plotType.
+**plotParams | dict | Supplementary parameters passed to matplotlib `errorbar, `fill_between` or `bar` plotting methods depending on plotType.
 noError | bool | If true, the error from ROOT objects is not plotted, without having to explicitly remove it first. Default False
+
+The following options are available for the `plotType` parameter. Additional styling may be specified by supplying valid arguments that will be passed on to the respective matplotlib methods.
+
+Value | Description
+--- | ---
+data | Default: draw the graph as points and errorbars using the `errorbar` method.
+theory | Draw a theory curve with a colorband (`fill_between` method) using typical HEP plot styling.
+fill_between | Draw using `fill_between` method, with user supplying the lower and higher y-limits instead of y and y uncertainty.
+histogram | Draw a histogram using `bar` method.
+upperLimit | Draw the upper uncertainty limit of the data points with a fixed sized arrow pointing downwards.
+2d_contour | Draw a 2D color and contour map with with `contour` and `contourf` methods.
+2d_histogram | Draw a 2D histogram with a colorbar with `imshow` method.
 
 A corresponding method is used to plot 2D graphs and histograms:
 
