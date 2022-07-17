@@ -17,7 +17,7 @@ import sys #for checking modules
 try:
 	import ROOT
 except ModuleNotFoundError:
-	print("pyROOT not found, disabling ROOT integration.");
+	print("pyROOT not found, disabling ROOT support.");
 
 matplotlib.rcParams["axes.linewidth"] = 1.5;
 
@@ -426,6 +426,8 @@ class JPyPlotRatio:
 		def labelWithScale(label):
 			return "{} ($\\times {:.1f}$)".format(label,scale) if np.abs(scale-1) > 1e-4 else label;
 
+		limitToZeroMasks = {};
+
 		#plot the data
 		for plotIndex,plot in enumerate(self.plots):
 			#apply scaling here so that ratio calculations won't get affected
@@ -444,13 +446,23 @@ class JPyPlotRatio:
 				else:
 					at = self.ax.flat[a0[plot.panelIndex]];
 				if self.limitToZero:
-					ll = y-yerr > 0;
-					zx,zy,zyerr = x[~ll],y[~ll],yerr[~ll];
+					systs1 = list(filter(lambda sys: sys[0] == plotIndex,self.systs));
+					terr = plot.arrays[2]*plot.arrays[2]; #unscaled yerr
+					if len(systs1) > 0:
+						for sys in systs1:
+							serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*plot.arrays[2]);
+							serr[np.isnan(serr)] = 0;
+							terr += serr*serr;
+					terr = np.sqrt(terr);
+					ll = y-terr > 0;
+					zx,zy,zyerr = x[~ll],y[~ll],scale*terr[~ll];
+					limitToZeroMasks[plotIndex] = ll;
+
 					at.errorbar(zx+plot.xshift,zy+zyerr,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
 					x,y,yerr = x[ll],y[ll],yerr[ll];
 				pr = at.errorbar(x+plot.xshift,y,yerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
 				if plot.label != "":
-					if self.systLegend and any([sys[0] == plotIndex for sys in self.systs]):
+					if self.systLegend and any((sys[0] == plotIndex for sys in self.systs)):
 						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = (patches.Patch(facecolor=plot.kwargs["color"],edgecolor="black",alpha=0.25),pr[0]);
 					else:
 						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr[0];
@@ -540,13 +552,13 @@ class JPyPlotRatio:
 			terr1 = np.zeros(yerr1.size);
 			terr2 = np.zeros(yerr2.size);
 
-			systs1 = list(filter(lambda t: t[0] == robj[0],self.systs));
+			systs1 = list(filter(lambda sys: sys[0] == robj[0],self.systs));
 			if len(systs1) > 0:
 				for sys in systs1:
 					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
 					terr1 += serr*serr;
 
-			systs2 = list(filter(lambda t: t[0] == robj[1],self.systs));
+			systs2 = list(filter(lambda sys: sys[0] == robj[1],self.systs));
 			if len(systs2) > 0:
 				for sys in systs2:
 					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y2);
@@ -618,11 +630,10 @@ class JPyPlotRatio:
 			ax = self.ax.flat[a0[panelIndex]];
 			xlim = ax.get_xlim();
 			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
-			syst = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
+			syst = (scale*sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
 			for i,patch in enumerate(SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25,zorder=len(self.plots)+sys[0])):
-				if self.limitToZero and y1[i]-yerr1[i] <= 0:
-					continue;
-				ax.add_patch(patch);
+				if limitToZeroMasks.get(sys[0],np.full(yerr1.size,True))[i]:
+					ax.add_patch(patch);
 
 			if self.ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
 				syst_y1 = syst/y1;
