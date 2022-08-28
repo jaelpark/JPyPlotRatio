@@ -90,8 +90,10 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 	x1,y1,yerr1 = a1;
 	x2,y2,yerr2 = a2;
 
-	sa = np.max(np.array([x1[0],x2[0]]));
-	sb = np.min(np.array([x1[-1],x2[-1]]));
+	#sa = np.max(np.array([x1[0],x2[0]]));
+	#sb = np.min(np.array([x1[-1],x2[-1]]));
+	sa = np.max(np.array([np.min(x1),np.min(x2)]));
+	sb = np.min(np.array([np.max(x1),np.max(x2)]));
 	sx = np.linspace(sa,sb,freq*max(x1.size,x2.size));
 
 	y1d = interpolate.interp1d(x1,y1)(sx);
@@ -594,7 +596,7 @@ class JPyPlotRatio:
 					dparams = self.plots[robj[0]].kwargs.copy();
 					dparams.update({k:robj[2][k] for k in robj[2]});
 					#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]].kwargs[k] for k in self.plots[robj[0]].kwargs if k not in ["linecolor"]});
-					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx+xshift,ratio-ratio_err,ratio+ratio_err,**{k:dparams[k] for k in dparams if k not in ["linecolor","scale","xshift"]});
+					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx+xshift,ratio-ratio_err,ratio+ratio_err,**{k:dparams[k] for k in dparams if k not in ["linecolor","scale","noError","xshift"]});
 
 					if plotStyle == "errorbar":
 						p1.remove();
@@ -614,7 +616,7 @@ class JPyPlotRatio:
 						if "linestyle" not in dparams:
 							dparams['linestyle'] = p1.get_linestyle()[0];
 						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]].kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0]);#,**dparams);
-						self.ax.flat[a1[panelIndex]].plot(sx+xshift,ratio,**{k:dparams[k] for k in dparams if k not in ["linecolor","facecolor","edgecolor","scale","xshift"]});
+						self.ax.flat[a1[panelIndex]].plot(sx+xshift,ratio,**{k:dparams[k] for k in dparams if k not in ["linecolor","facecolor","edgecolor","scale","noError","xshift"]});
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
 
