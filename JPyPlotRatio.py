@@ -108,8 +108,12 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 	elif mode == "diff":
 		ratio = y1d-y2d;
 		ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
+	
+	elif mode == "sigma":
+		ratio = (y1d-y2d)/yerr2d;
+		ratio_err = np.zeros(ratio.size);
 	else:
-		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio' or 'diff'.".format(mode));
+		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio', 'diff' or 'sigma'.".format(mode));
 
 	m = np.bitwise_and(~np.isnan(ratio),ratioRange[0] <= sx,sx < ratioRange[1]);
 	sx = sx[m];
@@ -241,7 +245,7 @@ class JPyPlotRatio:
 					except (KeyError,TypeError):
 						pass;
 
-			ratioDefault = {"ratio":"Ratio","diff":"Diff"}[self.ratioType];
+			ratioDefault = {"ratio":"Ratio","diff":"Diff","sigma":"$\\sigma$"}[self.ratioType];
 			ratioLabel = kwargs.get('ylabelRatio',ratioDefault);
 			if isinstance(ratioLabel,str):
 				for ry in self.A1y:
@@ -516,8 +520,9 @@ class JPyPlotRatio:
 						print("WARNING: \"equal\" aspect not supported. Use \"panelsize\" to explicitly control the aspect.");
 					pr = self.ax.flat[a0[plot.panelIndex]].imshow(x,**plot.kwargs);
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
-			else:
-				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram', 'upperLimit' or '2d'.".format(plot.plotType));
+
+			elif plot.plotType != "hidden":
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram', 'upperLimit', '2d' or 'hidden'.".format(plot.plotType));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
@@ -579,14 +584,14 @@ class JPyPlotRatio:
 			xshift = self.plots[robj[0]].xshift;
 
 			if not np.ma.is_masked(a1[panelIndex]):
-				if self.plots[robj[0]].plotType == "data":
+				if self.plots[robj[0]].plotType in ["data","upperLimit","hidden"]:
 					if plotStyle == "default":
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False)(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False)(x1);
 
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
-						for k in ["scale","skipAutolim","noError","style","xlim","xshift"]:
+						for k in ["scale","skipAutolim","noError","style","xlim","xshift","xerr"]:
 							dparams.pop(k,None);
 						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,2*ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
 					else:
