@@ -64,7 +64,6 @@ tickLabelSize | int | Tick labe size. Default 13
 majorTicks | int | Maximum number of major ticks on the x-axis. Default 6
 majorTickMultiple | int | Multiples of the major ticks. By default not used (None).
 logScale | bool | Apply logarithmic scale to each panel.
-limitToZero | bool | Draw data points which error bar goes below zero as a upper limit marker. Default false
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
 panelLabelSize | int | Panel label text size. Default 16
@@ -93,6 +92,7 @@ plotType | str | Plotting method and type. See table below for the available opt
 scale | float | Scale factor for y values of the TGraphErrors object
 **plotParams | dict | Supplementary parameters passed to matplotlib `errorbar, `fill_between` or `bar` plotting methods depending on plotType.
 noError | bool | If true, the error from ROOT objects is not plotted, without having to explicitly remove it first. Default False
+limitMask | `np.array` of bool, `str` | Draw upper limit at `y + yerr` for data points for which the mask element is true. Default None (no upper limits). Value can also be "yerr0" (upper limit when uncertainty below 0), "yerrsys0" (same, but with also systematics combined), or "all" (all points as upper limit)
 
 The following options are available for the `plotType` parameter. Additional styling may be specified by supplying valid arguments that will be passed on to the respective matplotlib methods.
 
@@ -102,7 +102,6 @@ data | Default: draw the graph as points and errorbars using the `errorbar` meth
 theory | Draw a theory curve with a colorband (`fill_between` method) using typical HEP plot styling.
 fill_between | Draw using `fill_between` method, with user supplying the lower and higher y-limits instead of y and y uncertainty.
 histogram | Draw a histogram using `bar` method.
-upperLimit | Draw the upper uncertainty limit of the data points with a fixed sized arrow pointing downwards.
 2d_contour | Draw a 2D color and contour map with with `contour` and `contourf` methods.
 2d_histogram | Draw a 2D histogram with a colorbar with `imshow` method.
 

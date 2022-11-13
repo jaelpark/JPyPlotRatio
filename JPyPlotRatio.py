@@ -110,7 +110,8 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 		ratio_err = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
 	
 	elif mode == "sigma":
-		ratio = (y1d-y2d)/yerr2d;
+		sigma = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
+		ratio = (y1d-y2d)/sigma;
 		ratio_err = np.zeros(ratio.size);
 	else:
 		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio', 'diff' or 'sigma'.".format(mode));
@@ -128,7 +129,7 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, logScale=False, limitToZero=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=16, panelLabelAlign="right", axisLabelSize=16, tickLabelSize=13, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=10, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -137,7 +138,7 @@ class JPyPlotRatio:
 		self.p,self.ax = plt.subplots(2*panels[0]-disableRatio.size,panels[1]+1,sharex=sharex,figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
 
-		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','labelOrder','plotType','xshift','kwargs']);
+		self.PlotEntry = namedtuple('PlotEntry',['panelIndex','arrays','label','labelLegendId','labelOrder','plotType','xshift','limitMask','kwargs']);
 
 		self.plots = [];
 		self.systs = [];
@@ -167,7 +168,6 @@ class JPyPlotRatio:
 		self.majorTicks = majorTicks;
 		self.majorTickMultiple = majorTickMultiple;
 		self.logScale = logScale;
-		self.limitToZero = limitToZero;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
 		self.legendSize = legendSize;
@@ -332,6 +332,12 @@ class JPyPlotRatio:
 		except KeyError:
 			xshift = 0.0;
 
+		try:
+			limitMask = kwargs['limitMask'];
+			del kwargs['limitMask'];
+		except KeyError:
+			limitMask = None; #np.full(arrays[0].size,False);
+
 		self.plots.append(self.PlotEntry(
 			panelIndex=panelIndex,
 			arrays=arrays,
@@ -340,6 +346,7 @@ class JPyPlotRatio:
 			labelOrder=labelOrder,
 			plotType=plotType,
 			xshift=xshift,
+			limitMask=limitMask,
 			kwargs=kwargs));
 		self.usedSet.add(panelIndex);
 
@@ -443,6 +450,7 @@ class JPyPlotRatio:
 			except IndexError:
 				x = plot.arrays[0]; #gotta be tuple of one
 			if plot.plotType == "data":
+				xerr = plot.kwargs.get("xerr",None);
 				if plot.kwargs.get("skipAutolim",False):
 					try:
 						at = twins[plot.panelIndex];
@@ -451,7 +459,7 @@ class JPyPlotRatio:
 						twins[plot.panelIndex] = at;
 				else:
 					at = self.ax.flat[a0[plot.panelIndex]];
-				if self.limitToZero:
+				if plot.limitMask is not None:
 					systs1 = list(filter(lambda sys: sys[0] == plotIndex,self.systs));
 					terr = plot.arrays[2]*plot.arrays[2]; #unscaled yerr
 					if len(systs1) > 0:
@@ -460,13 +468,30 @@ class JPyPlotRatio:
 							serr[np.isnan(serr)] = 0;
 							terr += serr*serr;
 					terr = np.sqrt(terr);
-					ll = y-terr > 0;
+					if isinstance(plot.limitMask,str):
+						if plot.limitMask == "yerr0":
+							ll = y-yerr > 0;
+						elif plot.limitMask == "yerrsys0":
+							ll = y-terr > 0;
+						elif plot.limitMask == "all":
+							ll = np.full(y.size,False);
+						else:
+							raise ValueError("Invalid limitMask string {}.".format(plot.limitMask));
+					else:
+						ll = ~plot.limitMask;
+
 					zx,zy,zyerr = x[~ll],y[~ll],scale*terr[~ll];
 					limitToZeroMasks[plotIndex] = ll;
 
-					at.errorbar(zx+plot.xshift,zy+zyerr,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
+					try:
+						zxerr = plot.kwargs["xerr"][~ll];
+						xerr = plot.kwargs["xerr"][ll];
+					except KeyError:
+						zxerr = None;
+
+					at.errorbar(zx+plot.xshift,zy+zyerr,xerr=zxerr,zorder=2,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
 					x,y,yerr = x[ll],y[ll],yerr[ll];
-				pr = at.errorbar(x+plot.xshift,y,yerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError"]});
+				pr = at.errorbar(x+plot.xshift,y,yerr,xerr=xerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError"]});
 				if plot.label != "":
 					if self.systLegend and any((sys[0] == plotIndex for sys in self.systs)):
 						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = (patches.Patch(facecolor=plot.kwargs["color"],edgecolor="black",alpha=0.25),pr[0]);
@@ -499,10 +524,10 @@ class JPyPlotRatio:
 				#	histograms[plot.panelIndex].append(plot);
 				#except ValueError:
 				#	raise ValueError("Histograms in the same panel must have identical dimensions.");
-			elif plot.plotType == "upperLimit":
-				pr = self.ax.flat[a0[plot.panelIndex]].errorbar(x+plot.xshift,y+yerr,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
-				if plot.label != "":
-					labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = plt.plot([1],linestyle="-",color=plot.kwargs["color"])[0];#pr;
+			#elif plot.plotType == "upperLimit":
+			#	pr = self.ax.flat[a0[plot.panelIndex]].errorbar(x+plot.xshift,y+yerr,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
+			#	if plot.label != "":
+			#		labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = plt.plot([1],linestyle="-",color=plot.kwargs["color"])[0];#pr;
 
 			elif "2d" in plot.plotType:
 				if "cmap" not in plot.kwargs:
