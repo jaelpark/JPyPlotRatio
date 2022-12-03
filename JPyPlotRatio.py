@@ -113,6 +113,14 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 		sigma = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
 		ratio = (y1d-y2d)/sigma;
 		ratio_err = np.zeros(ratio.size);
+	
+	elif mode == "direct":
+		ratio = y1d/y2d;
+		ratio_err = yerr1d/y1d;
+	
+	elif mode == "ratio_error":
+		ratio = yerr1d/yerr2d;
+		ratio_err = np.zeros(ratio.size);
 	else:
 		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio', 'diff' or 'sigma'.".format(mode));
 
@@ -245,7 +253,7 @@ class JPyPlotRatio:
 					except (KeyError,TypeError):
 						pass;
 
-			ratioDefault = {"ratio":"Ratio","diff":"Diff","sigma":"$\\sigma$"}[self.ratioType];
+			ratioDefault = {"ratio":"Ratio","diff":"Diff","sigma":"$\\sigma$","direct":"Ratio ($\\sigma_\\mathrm{num}$)","ratio_error":"$\\sigma_{num}/\\sigma_{den}$"}[self.ratioType];
 			ratioLabel = kwargs.get('ylabelRatio',ratioDefault);
 			if isinstance(ratioLabel,str):
 				for ry in self.A1y:
@@ -714,7 +722,7 @@ class JPyPlotRatio:
 			if self.ratioIndicator:
 				xl = self.ax.flat[ra1].get_xlim();
 				xs = xl[1]-xl[0];
-				if self.ratioType == "ratio":
+				if self.ratioType in ["ratio","direct","ratio_error"]:
 					ratioLine = np.array([1,1]);
 				else:
 					ratioLine = np.array([0,0]);
