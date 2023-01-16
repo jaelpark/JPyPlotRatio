@@ -16,7 +16,13 @@ Multipanel plotting class with ratio panels.
 	- yum install texlive-*
 
 ## Usage
-Import `JPyPlotRatio` and create JPyPlotRatio instance:
+Set the PYTHONPATH with the github you checkout like,
+PYTHONPATH=: yourdir/GitHub/JPyPlotRatio
+Import `JPyPlotRatio` and create JPyPlotRatio instance like
+import sys
+sys.path.append("JPyPlotRatio");
+import JPyPlotRatio
+
 
 ```python
 plot = JPyPlotRatio(panels=(1,2),
