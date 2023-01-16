@@ -6,6 +6,7 @@ import matplotlib.patches as patches
 import matplotlib.ticker as plticker
 import matplotlib.container as container
 from matplotlib.path import Path
+from matplotlib.transforms import Affine2D
 
 import scipy
 from scipy import interpolate
@@ -20,7 +21,6 @@ except ModuleNotFoundError:
 	print("pyROOT not found, disabling ROOT support.");
 
 matplotlib.rcParams["axes.linewidth"] = 1.5;
-
 
 def TGraphToNumpy(gr):
 	n = gr.GetN();
@@ -103,7 +103,7 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 
 	if mode == "ratio":
 		ratio = y1d/y2d;
-		ratio_err = ratio*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
+		ratio_err = np.abs(ratio)*np.sqrt((yerr2d/y2d)**2+(yerr1d/y1d)**2);
 
 	elif mode == "diff":
 		ratio = y1d-y2d;
@@ -111,7 +111,7 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 	
 	elif mode == "sigma":
 		sigma = np.sqrt(yerr1d*yerr1d+yerr2d*yerr2d);
-		ratio = (y1d-y2d)/sigma;
+		ratio = np.abs((y1d-y2d)/sigma);
 		ratio_err = np.zeros(ratio.size);
 	
 	elif mode == "direct":
@@ -215,6 +215,7 @@ class JPyPlotRatio:
 		codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
 		self.limitMarkerPath = Path(verts,codes);#.transformed(at.transAxes);
 		self.limitMarkerPathFull = Path([(-1,0),(1,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
+		self.limitMarkerPathFullInverse = self.limitMarkerPathFull.transformed(Affine2D().rotate(np.pi));
 
 		for i,a in enumerate(self.ax[0,1:]):
 			a.xaxis.set_ticks_position('both');
@@ -293,7 +294,7 @@ class JPyPlotRatio:
 			A.xaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.yaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			#FIXME - minor ticks disappear with log scale
-			#locmin = matplotlib.ticker.LogLocator(base=10.0, subs=(0.1,0.2,0.4,0.6,0.8,1,2,4,6,8,10));
+			#locmin = matplotlib.ticker.LogLocator(base=10.0,subs=(0.1,0.2,0.4,0.6,0.8,1,2,4,6,8,10));
 			#A.yaxis.set_minor_locator(locmin);
 			#A.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter());
 			A.xaxis.set_tick_params(labelsize=self.tickLabelSize);
@@ -303,6 +304,13 @@ class JPyPlotRatio:
 			#for A in self.ax.flat:
 			for panelIndex in np.concatenate((self.A0y.reshape(-1),self.a0)):
 				self.ax.flat[panelIndex].set_yscale("log");
+
+			#locmin = matplotlib.ticker.LogLocator(base=10.0,numticks=999,subs=(0.1,0.2,0.4,0.6,0.8,1,2,4,6,8,10));
+			#locmin = matplotlib.ticker.LogLocator(base=10.0,numticks=999,subs=(0.2,0.4,0.6,0.8));
+			locmin = matplotlib.ticker.LogLocator(base=10.0,numticks=999,subs=(10,));
+			for ry in self.A0.flat:
+				self.ax.flat[ry].yaxis.set_minor_locator(locmin);
+				self.ax.flat[ry].yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter());
 	
 	def Add(self, panelIndex, arrays, label="", labelLegendId=0, labelOrder=0, plotType="data", **kwargs):
 		if panelIndex >= self.a0.size:
@@ -497,7 +505,7 @@ class JPyPlotRatio:
 					except KeyError:
 						zxerr = None;
 
-					at.errorbar(zx+plot.xshift,zy+zyerr,xerr=zxerr,zorder=2,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError","fillstyle","linestyle","markersize","mfc"]});
+					at.errorbar(zx+plot.xshift,zy+zyerr,xerr=zxerr,zorder=2,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError","fillstyle","linestyle","markersize","fmt","mfc"]});
 					x,y,yerr = x[ll],y[ll],yerr[ll];
 				pr = at.errorbar(x+plot.xshift,y,yerr,xerr=xerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError"]});
 				if plot.label != "":
@@ -604,15 +612,16 @@ class JPyPlotRatio:
 					serr = (sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y2);
 					terr2 += serr*serr;
 
-			if not self.ratioSystPlot and (len(systs1) > 0 or len(systs2) > 0):
+			panelIndex = self.plots[robj[0]].panelIndex;
+
+			ratioSystPlot = self.ratioSystPlot if isinstance(self.ratioSystPlot,bool) else (panelIndex in self.ratioSystPlot);
+			if not ratioSystPlot and (len(systs1) > 0 or len(systs2) > 0):
 				yerr1 = np.sqrt(yerr1*yerr1+terr1);
 				yerr2 = np.sqrt(yerr2*yerr2+terr2);
 
 			sx,ratio,ratio_err = RatioSamples((x1,y1,yerr1),(x2,y2,yerr2),self.ratioType,ratioRange=ratioRange);
 			if robj[2].get("noError",False):
 				ratio_err = np.zeros(ratio.size);
-
-			panelIndex = self.plots[robj[0]].panelIndex;
 			
 			xshift = self.plots[robj[0]].xshift;
 
@@ -626,7 +635,7 @@ class JPyPlotRatio:
 						dparams.update({k:robj[2][k] for k in robj[2]});
 						for k in ["scale","skipAutolim","noError","style","xlim","xshift","xerr"]:
 							dparams.pop(k,None);
-						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,2*ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
+						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
@@ -642,7 +651,7 @@ class JPyPlotRatio:
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,2*ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
+						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
 					elif plotStyle == "default":
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
@@ -675,7 +684,8 @@ class JPyPlotRatio:
 				if limitToZeroMasks.get(sys[0],np.full(yerr1.size,True))[i]:
 					ax.add_patch(patch);
 
-			if self.ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
+			ratioSystPlot = self.ratioSystPlot if isinstance(self.ratioSystPlot,bool) else (panelIndex in self.ratioSystPlot);
+			if ratioSystPlot and not np.ma.is_masked(a1[panelIndex]):
 				syst_y1 = syst/y1;
 				terr_max = 1.0+syst_y1;
 				terr_min = 1.0-syst_y1;
@@ -786,6 +796,11 @@ class JPyPlotRatio:
 			lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 			labels1 = [p[0] for p in labelsSorted];
 			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc);
+
+		#for A in [self.ax.flat[0]]:#self.ax.flat[1:]:
+		#	locmin = matplotlib.ticker.LogLocator(base=10.0,subs=(0.1,0.2,0.4,0.6,0.8,1,2,4,6,8,10));
+		#	A.yaxis.set_minor_locator(locmin);
+		#	A.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter());
 
 		self.p.align_labels(self.ax.flat[self.A0y]);
 		self.p.align_labels(self.ax.flat[self.A0[:,-1]]);
