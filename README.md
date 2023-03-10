@@ -52,13 +52,13 @@ rowBoundsMax | Dict `{rowN:(ymin,ymax), ...}` or tuple | Dictionary of minimum a
 colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
 ratioIndicator | bool | If True, a dashed line will be drawn to indicate a zero difference line
-ratioType | str | Difference type "ratio" (a/b) or "diff" (a-b)
+ratioType | str | Ratio panel approach: "ratio": (a/b) with error propagation, "diff": (a-b) with error propagation, "sigma": |a-b|/sigma, "direct": (a/b) with error (Da/Db), "ratio_err": (Da/Db)
 ratioSystPlot | bool | Plot systematics separately in ratio plot
 systLegend | bool | Draw systematic error patches in legend. Default true
 panelScaling | Dict `{panelIndex:scale, ...}` | Dictionary of scale factors for the plots in each panel
 panelPrivateScale | list `[panelIdex1,panelIndex2,...]` | List of panels that should have their own y-axis scale instead of a shared one
 panelPrivateRowBounds | Dict `{panelIndex:(ymin,ymax),...}` | Dictionary of y-limits for each panel included in `panelPrivateScale`
-panelRatioPrivateScale | list `[panelIndex1,panelIndex2,...] | List of panels ratios that should have their own y-axis instead of a shared one
+panelRatioPrivateScale | list `[panelIndex1,panelIndex2,...]` | List of panels ratios that should have their own y-axis instead of a shared one
 panelRatioPrivateRowBounds | Dict `{panelIndex:(ymin,ymax),...}` | Dictionary of y-limits for each panel ratio included in `panelPrivateScale`
 systPatchWidth | float | Fractional width of the systematic uncertainty patches with relation to the panel width. Default 0.065.
 xlabel | str or Dict `{colId:str, ...}` | xlabel for all panels (str), or dictionary of xlabels for each column
@@ -77,6 +77,7 @@ panelLabelAlign | str | Text alignment for the panel labels, "left", "center", "
 legendPanel | int or Dict `{legendId:panelIndex, ...}` | Index (indices) of the panel(s) where to pace the legend. Use dictionary if multiple legends is wanted.
 legendLoc | Tuple (x, y) or Dict `{legendId:(x,y), ...}` | Legend location(s) in the panel(s)
 legendSize | int | Legend text size. Default 10
+sharex | str | sharex argument passed on to subplots() Default "col"
 
 Plot curves with `plot.Add(...)`. Input curve should be either as numpy arrays, or ROOT objects. `Add` automatically converts a TGraphErrors and TH1 object to numpy arrays and plots them.
 

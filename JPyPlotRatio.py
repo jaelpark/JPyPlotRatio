@@ -122,7 +122,7 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 		ratio = yerr1d/yerr2d;
 		ratio_err = np.zeros(ratio.size);
 	else:
-		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio', 'diff' or 'sigma'.".format(mode));
+		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio', 'diff', 'sigma', 'direct' or 'ratio_error'.".format(mode));
 
 	m = np.bitwise_and(~np.isnan(ratio),ratioRange[0] <= sx,sx < ratioRange[1]);
 	sx = sx[m];
@@ -137,7 +137,7 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92),panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=12, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=12, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -376,12 +376,12 @@ class JPyPlotRatio:
 	
 	#deprecated
 	def AddTGraph(self, panelIndex, gr, label="", labelLegendId=0, plotType="data", **kwargs):
-		print("WARNING: AddTGraph deprecated: use Add() to plot ROOT.TGraphErrors objects (interchangeable)");
+		print("WARNING: AddTGraph deprecated: use Add() to plot ROOT.TGraphErrors objects (drop-in replacement)");
 		return self.Add(panelIndex,gr,label,labelLegendId,plotType,**kwargs);
 	
 	#deprecated
 	def AddTH1(self, panelIndex, h1, label="", labelLegendId=0, plotType="histogram", **kwargs):
-		print("WARNING: AddTH1 deprecated: use Add() to plot ROOT.TH1 objects (interchangeable)");
+		print("WARNING: AddTH1 deprecated: use Add() to plot ROOT.TH1 objects (drop-in replacement)");
 		return self.Add(panelIndex,h1,label,labelLegendId,plotType,**kwargs);
 	
 	def Add2D(self, panelIndex, arrays, **kwargs):
@@ -569,7 +569,7 @@ class JPyPlotRatio:
 				self.p.colorbar(pr,ax=self.ax.flat[a0[plot.panelIndex]]);
 
 			elif plot.plotType != "hidden":
-				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram', 'upperLimit', '2d' or 'hidden'.".format(plot.plotType));
+				raise ValueError("Invalid plotType specified '{}'. plotType must be 'data', 'theory', 'fill_between', 'histogram', '2d' or 'hidden'.".format(plot.plotType));
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
