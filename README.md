@@ -47,8 +47,8 @@ panels | Tuple (h, w) | Multipanel plot dimensions. Default (1,1) (one panel)
 panelsize | Tuple (w, h) | Dimensions of one panel
 layoutRatio | float | Relative proportions between the plot panel and ratio panel. Default 0.7
 disableRatio | list `[rowN1,rowN2,...]` | Row indices for which ratio plot won't be shown 
-rowBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for each row
-rowBoundsMax | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of minimum and maximum y-limits for each row - applied if plot point exceeds these limits. Ignored for a row if `rowBounds` has a setting for it.
+rowBounds | Dict `{rowN:(ymin,ymax), ...}` or tuple | Dictionary of y-limits for each row. If tuple, apply common to each row.
+rowBoundsMax | Dict `{rowN:(ymin,ymax), ...}` or tuple | Dictionary of minimum and maximum y-limits for each row - applied if plot point exceeds these limits. Ignored for a row if `rowBounds` has a setting for it. If tuple, apply common to each row.
 colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
 ratioIndicator | bool | If True, a dashed line will be drawn to indicate a zero difference line

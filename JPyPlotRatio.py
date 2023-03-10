@@ -164,8 +164,8 @@ class JPyPlotRatio:
 		self.panelLabelLoc = panelLabelLoc;
 		self.panelLabelSize = panelLabelSize;
 		self.panelLabelAlign = panelLabelAlign;
-		self.rowBounds = {0:rowBounds} if type(rowBounds) == tuple else rowBounds;
-		self.rowBoundsMax = {0:rowBoundsMax} if type(rowBoundsMax) == tuple else rowBoundsMax;
+		self.rowBounds = rowBounds; #{0:rowBounds} if type(rowBounds) == tuple else rowBounds;
+		self.rowBoundsMax = rowBoundsMax; #{0:rowBoundsMax} if type(rowBoundsMax) == tuple else rowBoundsMax;
 		self.ratioBounds = ratioBounds;
 		self.ratioIndicator = ratioIndicator;
 		self.ratioType = ratioType;
@@ -220,7 +220,10 @@ class JPyPlotRatio:
 		for i,a in enumerate(self.ax[0,1:]):
 			a.xaxis.set_ticks_position('both');
 			try:
-				a.set_xlim(colBounds[i]);
+				if isinstance(colBounds,dict) or isinstance(colBounds,list):
+					a.set_xlim(colBounds[i]);
+				else:
+					a.set_xlim(colBounds); #tuple
 			except KeyError:
 				pass;
 
@@ -325,6 +328,9 @@ class JPyPlotRatio:
 				arrays = x,vf(x);
 			if isinstance(arrays,ROOT.TH1):
 				arrays = ROOT.TGraphErrors(arrays);
+			#if isinstance(arrays,ROOT.TGraph):
+			#	x,y = TGraphToNumpy(arrays);
+			#	arrays = (x,y);
 			if isinstance(arrays,ROOT.TGraphErrors) or isinstance(arrays,ROOT.TObject):
 				x,y,_,yerr = TGraphErrorsToNumpy(arrays);
 				arrays = (x,y,yerr) if not kwargs.get("noError",False) else (x,y);
@@ -567,7 +573,10 @@ class JPyPlotRatio:
 			
 		for i,(ra0n,ry) in enumerate(zip(A0[:,],self.A0y)):
 			try:
-				self.ax.flat[ry].set_ylim(self.rowBounds[i]);
+				if isinstance(self.rowBounds,dict) or isinstance(self.rowBounds,list):
+					self.ax.flat[ry].set_ylim(self.rowBounds[i]);
+				else:
+					self.ax.flat[ry].set_ylim(self.rowBounds);
 			except KeyError:
 				bounds = (1e6,-1e6);
 				for ra0,rap in zip(ra0n,ap[self.A.shape[1]*i:]):
@@ -576,9 +585,10 @@ class JPyPlotRatio:
 					ylim0 = self.ax.flat[ra0].get_ylim();
 					bounds = (min(bounds[0],ylim0[0]),max(bounds[1],ylim0[1]));
 				try:
+					rowBoundsMax1 = self.rowBoundsMax[i] if isinstance(self.rowBoundsMax,dict) or isinstance(self.rowBoundsMax,list) else self.rowBoundsMax;
 					bounds = (
-						max(self.rowBoundsMax[i][0],bounds[0]),
-						min(self.rowBoundsMax[i][1],bounds[1]));
+						max(rowBoundsMax1[0],bounds[0]),
+						min(rowBoundsMax1[1],bounds[1]));
 				except KeyError:
 					pass;
 				self.ax.flat[ry].set_ylim(bounds);
