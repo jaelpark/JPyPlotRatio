@@ -217,6 +217,10 @@ class JPyPlotRatio:
 		self.limitMarkerPathFull = Path([(-1,0),(1,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
 		self.limitMarkerPathFullInverse = self.limitMarkerPathFull.transformed(Affine2D().rotate(np.pi));
 
+		verts = [(0,0),(0,-1.5),(-0.3,-1),(0.3,-1),(0,-1.5),(0,0)];
+		#self.limitMarkerLegend = Path([(-0.01,0),(0.01,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
+		self.limitMarkerLegend = Path([(-0.5,0),(0.5,0)]+verts,[Path.MOVETO,Path.LINETO]+codes).transformed(Affine2D().translate(0,0.5));
+
 		for i,a in enumerate(self.ax[0,1:]):
 			a.xaxis.set_ticks_position('both');
 			try:
