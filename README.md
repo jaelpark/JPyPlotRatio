@@ -52,7 +52,7 @@ rowBoundsMax | Dict `{rowN:(ymin,ymax), ...}` or tuple | Dictionary of minimum a
 colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
 ratioIndicator | bool | If True, a dashed line will be drawn to indicate a zero difference line
-ratioType | str | Ratio panel approach: "ratio": (a/b) with error propagation, "diff": (a-b) with error propagation, "sigma": |a-b|/sigma, "direct": (a/b) with error (Da/Db), "ratio_err": (Da/Db)
+ratioType | str | Ratio panel approach: "ratio": (a/b) with error propagation, "diff": (a-b) with error propagation, "sigma": |a-b|/sigma, "direct": (a/b) with error (Da/Db), "ratio_err": (Da/Db), "ratio_rel_error": (Da*b)/(Db*a)
 ratioSystPlot | bool | Plot systematics separately in ratio plot
 systLegend | bool | Draw systematic error patches in legend. Default true
 panelScaling | Dict `{panelIndex:scale, ...}` | Dictionary of scale factors for the plots in each panel
@@ -76,6 +76,7 @@ panelLabelSize | int | Panel label text size. Default 16
 panelLabelAlign | str | Text alignment for the panel labels, "left", "center", "right" (default).
 legendPanel | int or Dict `{legendId:panelIndex, ...}` | Index (indices) of the panel(s) where to pace the legend. Use dictionary if multiple legends is wanted.
 legendLoc | Tuple (x, y) or Dict `{legendId:(x,y), ...}` | Legend location(s) in the panel(s)
+legendLabelSpacing | float or Dict `{legendId:(x,y), ...}` | Legend label spacing
 legendSize | int | Legend text size. Default 10
 sharex | str | sharex argument passed on to subplots() Default "col"
 

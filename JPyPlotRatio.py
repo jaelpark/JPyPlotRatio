@@ -121,8 +121,12 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 	elif mode == "ratio_error":
 		ratio = yerr1d/yerr2d;
 		ratio_err = np.zeros(ratio.size);
+	
+	elif mode == "ratio_rel_error":
+		ratio = (yerr1d*y2d)/(yerr2d*y1d);
+		ratio_err = np.zeros(ratio.size);
 	else:
-		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio', 'diff', 'sigma', 'direct' or 'ratio_error'.".format(mode));
+		raise ValueError("Invalid ratioType specified '{}'. ratioType must be either 'ratio', 'diff', 'sigma', 'direct', 'ratio_error' or 'ratio_rel_error'.".format(mode));
 
 	m = np.bitwise_and(~np.isnan(ratio),ratioRange[0] <= sx,sx < ratioRange[1]);
 	sx = sx[m];
@@ -137,7 +141,7 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendSize=12, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -178,6 +182,7 @@ class JPyPlotRatio:
 		self.logScale = logScale;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
+		self.legendLabelSpacing = legendLabelSpacing;
 		self.legendSize = legendSize;
 
 		self.ax = np.atleast_2d(self.ax);
@@ -219,7 +224,7 @@ class JPyPlotRatio:
 
 		verts = [(0,0),(0,-1.5),(-0.3,-1),(0.3,-1),(0,-1.5),(0,0)];
 		#self.limitMarkerLegend = Path([(-0.01,0),(0.01,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
-		self.limitMarkerLegend = Path([(-0.5,0),(0.5,0)]+verts,[Path.MOVETO,Path.LINETO]+codes).transformed(Affine2D().translate(0,0.5));
+		self.limitMarkerLegend = Path([(-0.5,0),(0.5,0)]+verts,[Path.MOVETO,Path.LINETO]+codes).transformed(Affine2D().translate(0,0.9));
 
 		for i,a in enumerate(self.ax[0,1:]):
 			a.xaxis.set_ticks_position('both');
@@ -746,7 +751,7 @@ class JPyPlotRatio:
 			if self.ratioIndicator:
 				xl = self.ax.flat[ra1].get_xlim();
 				xs = xl[1]-xl[0];
-				if self.ratioType in ["ratio","direct","ratio_error"]:
+				if self.ratioType in ["ratio","direct","ratio_error","ratio_rel_error"]:
 					ratioLine = np.array([1,1]);
 				else:
 					ratioLine = np.array([0,0]);
@@ -792,7 +797,9 @@ class JPyPlotRatio:
 				lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 				try:
 					labels1 = [p[0] for p in labelsSorted if p[1] == k];
-					l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
+					lbs = self.legendLabelSpacing.get(k,matplotlib.rcParams['legend.labelspacing']) \
+						if isinstance(self.legendLabelSpacing,dict) else self.legendLabelSpacing;
+					l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,labelspacing=lbs,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
 				except KeyError:
 					raise ValueError("Incompatible input legendPanel and legendLoc: the number of entries must be same.");
 				try:
@@ -809,7 +816,7 @@ class JPyPlotRatio:
 			lines = [labels[p] for p in labelsSorted];
 			lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
 			labels1 = [p[0] for p in labelsSorted];
-			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc);
+			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,labelspacing=self.legendLabelSpacing,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc);
 
 		#for A in [self.ax.flat[0]]:#self.ax.flat[1:]:
 		#	locmin = matplotlib.ticker.LogLocator(base=10.0,subs=(0.1,0.2,0.4,0.6,0.8,1,2,4,6,8,10));
