@@ -8,6 +8,7 @@ Multipanel plotting class with ratio panels.
 	- OR in MAC
 		- base=/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.7
 		- cmake ../root-6.20.00 -DCMAKE_INSTALL_PREFIX={your build dir} -DPYTHON_EXECUTABLE=${base}/bin/python3 -DPYTHON_INCLUDE_DIR=${base}/Headers -DPYTHON_LIBRARY=${base}/lib/libpython3.5m.dylib -Dgnuinstall=ON -Dpython3=ON -Droofit=ON -Dminuit2=ON
+	- cmake -DCMAKE_INSTALL_PREFIX=../root_install ../root_src -DPYTHON_EXECUTABLE=/usr/bin/python3  -Dgnuinstall=ON -Dpython3=ON -Droofit=ON -Dminuit2=ON
 	- Recommended via hombrew, brew install root --build-from-source
 - https://matplotlib.org
 	- pip3 install matplotlib scipy
