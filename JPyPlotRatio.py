@@ -511,7 +511,7 @@ class JPyPlotRatio:
 					else:
 						ll = ~plot.limitMask;
 
-					zx,zy,zyerr = x[~ll],y[~ll],scale*terr[~ll];
+					zx,zy,zyerr = x[~ll],y[~ll],scale*terr[~ll]; #y already scaled
 					limitToZeroMasks[plotIndex] = ll;
 
 					try:
@@ -530,6 +530,12 @@ class JPyPlotRatio:
 						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = pr[0];
 
 			elif plot.plotType == "theory":
+				if plot.limitMask is not None:
+					ll = ~plot.limitMask;
+					zx,zy,zyerr = x[~ll],y[~ll],yerr[~ll];
+					limitToZeroMasks[plotIndex] = ll;
+					at.errorbar(zx+plot.xshift,zy+zyerr,xerr=None,zorder=2,marker=self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError","fillstyle","linestyle","markersize","fmt","mfc"]});
+					x,y,yerr = x[ll],y[ll],yerr[ll];
 				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,zorder=plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
 					self.ax.flat[a0[plot.panelIndex]].plot(x+plot.xshift,y,color=plot.kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0],zorder=plotIndex)[0]);
@@ -604,7 +610,10 @@ class JPyPlotRatio:
 
 		for i,ry in enumerate(self.A1y):
 			try:
-				self.ax.flat[ry].set_ylim(self.ratioBounds[i]);
+				if isinstance(self.ratioBounds,dict) or isinstance(self.ratioBounds,list):
+					self.ax.flat[ry].set_ylim(self.ratioBounds[i]);
+				else:
+					self.ax.flat[ry].set_ylim(self.ratioBounds);
 			except KeyError:
 				self.ax.flat[ry].set_ylim([0.5,1.5]);
 
