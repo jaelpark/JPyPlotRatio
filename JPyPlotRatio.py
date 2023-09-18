@@ -141,7 +141,7 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -180,6 +180,7 @@ class JPyPlotRatio:
 		self.majorTicks = majorTicks;
 		self.majorTickMultiple = majorTickMultiple;
 		self.logScale = logScale;
+		self.hideLegends = hideLegends;
 		self.legendPanel = legendPanel;
 		self.legendLoc = legendLoc;
 		self.legendLabelSpacing = legendLabelSpacing;
@@ -798,34 +799,35 @@ class JPyPlotRatio:
 		#	self.ax.flat[ry].text(0.0,0.9,offsetStr,horizontalalignment="right",verticalalignment="center",transform=self.ax.flat[ry].transAxes,size=13);
 		#	#a.text(0.0,0.9,offsetStr,horizontalalignment="right",verticalalignment="center",transform=a.transAxes,size=13);
 
-		if isinstance(self.legendPanel,dict):
-			l1 = [self.legendPanel[k] for k in self.legendPanel];
-			for k in self.legendPanel:
+		if not self.hideLegends:
+			if isinstance(self.legendPanel,dict):
+				l1 = [self.legendPanel[k] for k in self.legendPanel];
+				for k in self.legendPanel:
+					labelsSorted = sorted(list(labels),key=lambda p: p[2]);
+					lines = [labels[p] for p in labelsSorted if p[1] == k];
+					lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
+					try:
+						labels1 = [p[0] for p in labelsSorted if p[1] == k];
+						lbs = self.legendLabelSpacing.get(k,matplotlib.rcParams['legend.labelspacing']) \
+							if isinstance(self.legendLabelSpacing,dict) else self.legendLabelSpacing;
+						l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,labelspacing=lbs,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
+					except KeyError:
+						raise ValueError("Incompatible input legendPanel and legendLoc: the number of entries must be same.");
+					try:
+						#hack: add_artist must not be called for the last legend for particular panel
+						l1.remove(self.legendPanel[k]);
+						l1.index(self.legendPanel[k]);
+						self.ax.flat[a0[self.legendPanel[k]]].add_artist(l);
+					except:
+						pass;
+			else:
+				#one legend only
+				#TODO: create multiple legends with labelLegendId, not legendPanel?
 				labelsSorted = sorted(list(labels),key=lambda p: p[2]);
-				lines = [labels[p] for p in labelsSorted if p[1] == k];
+				lines = [labels[p] for p in labelsSorted];
 				lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
-				try:
-					labels1 = [p[0] for p in labelsSorted if p[1] == k];
-					lbs = self.legendLabelSpacing.get(k,matplotlib.rcParams['legend.labelspacing']) \
-						if isinstance(self.legendLabelSpacing,dict) else self.legendLabelSpacing;
-					l = self.ax.flat[a0[self.legendPanel[k]]].legend(lines,labels1,frameon=False,labelspacing=lbs,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc[k]);
-				except KeyError:
-					raise ValueError("Incompatible input legendPanel and legendLoc: the number of entries must be same.");
-				try:
-					#hack: add_artist must not be called for the last legend for particular panel
-					l1.remove(self.legendPanel[k]);
-					l1.index(self.legendPanel[k]);
-					self.ax.flat[a0[self.legendPanel[k]]].add_artist(l);
-				except:
-					pass;
-		else:
-			#one legend only
-			#TODO: create multiple legends with labelLegendId, not legendPanel?
-			labelsSorted = sorted(list(labels),key=lambda p: p[2]);
-			lines = [labels[p] for p in labelsSorted];
-			lines = [h[0] if isinstance(h,container.ErrorbarContainer) else h for h in lines];
-			labels1 = [p[0] for p in labelsSorted];
-			self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,labelspacing=self.legendLabelSpacing,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc);
+				labels1 = [p[0] for p in labelsSorted];
+				self.ax.flat[a0[self.legendPanel]].legend(lines,labels1,frameon=False,labelspacing=self.legendLabelSpacing,prop={'size':self.legendSize},loc="center",handletextpad=0.25,bbox_to_anchor=self.legendLoc);
 
 		#for A in [self.ax.flat[0]]:#self.ax.flat[1:]:
 		#	locmin = matplotlib.ticker.LogLocator(base=10.0,subs=(0.1,0.2,0.4,0.6,0.8,1,2,4,6,8,10));
