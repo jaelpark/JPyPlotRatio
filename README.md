@@ -99,9 +99,11 @@ labelLegendId | int | Identifier of the legend to which the plot will be labeled
 labelOrder | int | Explicit ordering of legend labels
 plotType | str | Plotting method and type. See table below for the available options. Default "data"
 scale | float | Scale factor for y values of the TGraphErrors object
-**plotParams | dict | Supplementary parameters passed to matplotlib `errorbar, `fill_between` or `bar` plotting methods depending on plotType.
 noError | bool | If true, the error from ROOT objects is not plotted, without having to explicitly remove it first. Default False
 limitMask | `np.array` of bool, `str` | Draw upper limit at `y + yerr` for data points for which the mask element is true. Default None (no upper limits). Value can also be "yerr0" (upper limit when uncertainty below 0), "yerrsys0" (same, but with also systematics combined), or "all" (all points as upper limit)
+xerrLinestyle | str | Linestyle to use for x-errors
+yerrLinestyle | str | Linestyle to use for y-errors
+**plotParams | dict | Supplementary parameters passed to matplotlib `errorbar, `fill_between` or `bar` plotting methods depending on plotType.
 
 The following options are available for the `plotType` parameter. Additional styling may be specified by supplying valid arguments that will be passed on to the respective matplotlib methods.
 

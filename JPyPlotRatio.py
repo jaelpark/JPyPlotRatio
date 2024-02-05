@@ -140,6 +140,9 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	h = 0.5*s;
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
+def StripAttributes(d, fixed, extras=[]):
+	return {k:d[k] for k in d if (k not in fixed and k not in ["xshift","scale","skipAutolim","limitMask","noError","style","xerrLinestyle","yerrLinestyle"] and k not in extras)};
+
 class JPyPlotRatio:
 	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
@@ -215,13 +218,16 @@ class JPyPlotRatio:
 		#self.a1 = self.A1.reshape(-1); #ratio indices (flat)
 
 		#create a bar-arrow marker
-		#verts = [(-1,0),(1,0),(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,0)];
-		#codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
-		verts = [(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,0)];
+		verts = [(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,-5)]; #arrow down, no horizontal bar
 		codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
-		self.limitMarkerPath = Path(verts,codes);#.transformed(at.transAxes);
+		#---
+		self.limitMarkerPath = Path(verts,codes);#.transformed(at.transAxes); #arrow down, no horizontal bar
 		self.limitMarkerPathFull = Path([(-1,0),(1,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
 		self.limitMarkerPathFullInverse = self.limitMarkerPathFull.transformed(Affine2D().rotate(np.pi));
+
+		vertsDashed = [(0,t) for t in np.linspace(-0,-5,10)]+[(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,-5)]; #arrow down, no horizontal bar
+		codesDashed = [[Path.MOVETO,Path.LINETO][i%2] for i in range(0,10)]+[Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
+		self.limitMarkerPathDashed = Path(vertsDashed,codesDashed);
 
 		verts = [(0,0),(0,-1.5),(-0.3,-1),(0.3,-1),(0,-1.5),(0,0)];
 		#self.limitMarkerLegend = Path([(-0.01,0),(0.01,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
@@ -521,9 +527,16 @@ class JPyPlotRatio:
 					except KeyError:
 						zxerr = None;
 
-					at.errorbar(zx+plot.xshift,zy+zyerr,xerr=zxerr,zorder=2,marker=self.limitMarkerPath if "xerr" in plot.kwargs else self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError","fillstyle","linestyle","markersize","fmt","mfc"]});
+					limitMarker = (self.limitMarkerPathDashed if plot.kwargs.get("linestyle","none") in ["--",":"] else self.limitMarkerPath);
+					targs = {"x":zx+plot.xshift,"y":zy+zyerr,"yerr":None,"xerr":zxerr,"zorder":2,"marker":limitMarker if "xerr" in plot.kwargs else self.limitMarkerPathFull,"markersize":50,"fillstyle":"full","linestyle":"none"};
+					at.errorbar(**(targs|StripAttributes(plot.kwargs,targs)));
 					x,y,yerr = x[ll],y[ll],yerr[ll];
-				pr = at.errorbar(x+plot.xshift,y,yerr,xerr=xerr,zorder=2*len(self.plots)+plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError"]});
+
+				targs = {"x":x+plot.xshift,"y":y,"yerr":yerr,"xerr":xerr,"zorder":2*len(self.plots)+plotIndex};
+				pr = at.errorbar(**(targs|StripAttributes(plot.kwargs,targs)));
+				#pr[-1][0].set_linestyle(":");
+				if "yerrLinestyle" in plot.kwargs:
+					pr[-1][-1].set_linestyle(plot.kwargs["yerrLinestyle"]);
 				if plot.label != "":
 					if self.systLegend and any((sys[0] == plotIndex for sys in self.systs)):
 						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = (patches.Patch(facecolor=plot.kwargs["color"],edgecolor="black",alpha=0.25),pr[0]);
@@ -535,7 +548,8 @@ class JPyPlotRatio:
 					ll = ~plot.limitMask;
 					zx,zy,zyerr = x[~ll],y[~ll],yerr[~ll];
 					limitToZeroMasks[plotIndex] = ll;
-					at.errorbar(zx+plot.xshift,zy+zyerr,xerr=None,zorder=2,marker=self.limitMarkerPathFull,markersize=50,fillstyle="full",linestyle="none",**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["xerr","scale","skipAutolim","noError","fillstyle","linestyle","markersize","fmt","mfc"]});
+					targs = {"x":zx+plot.xshift,"y":zy+zyerr,"yerr":None,"xerr":None,"zorder":2,"marker":self.limitMarkerPathFull,"markersize":50,"fillstyle":"full","linestyle":"none"};
+					at.errorbar(**(targs|StripAttributes(plot.kwargs,targs,["fmt","mfc"])));
 					x,y,yerr = x[ll],y[ll],yerr[ll];
 				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,zorder=plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
@@ -662,17 +676,19 @@ class JPyPlotRatio:
 
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
-						for k in ["scale","skipAutolim","noError","style","xlim","xshift","xerr"]:
-							dparams.pop(k,None);
-						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
+						#for k in ["scale","skipAutolim","noError","style","xlim","xshift","xerr"]:
+						#	dparams.pop(k,None);
+						#self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
+						targs = {"x":x1+xshift,"y":ratio1d,"yerr":ratio_err1d};
+						self.ax.flat[a1[panelIndex]].errorbar(**(targs|StripAttributes(targs,dparams)));
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
 				elif self.plots[robj[0]].plotType == "theory":
 					dparams = self.plots[robj[0]].kwargs.copy();
 					dparams.update({k:robj[2][k] for k in robj[2]});
-					#p1 = self.ax.flat[a1[panelIndex]].fill_between(sx,ratio-ratio_err,ratio+ratio_err,**{k:self.plots[robj[0]].kwargs[k] for k in self.plots[robj[0]].kwargs if k not in ["linecolor"]});
-					p1 = self.ax.flat[a1[panelIndex]].fill_between(sx+xshift,ratio-ratio_err,ratio+ratio_err,**{k:dparams[k] for k in dparams if k not in ["linecolor","scale","noError","xshift"]});
+					targs = {"x":sx+xshift,"y1":ratio-ratio_err,"y2":ratio+ratio_err};
+					p1 = self.ax.flat[a1[panelIndex]].fill_between(**(targs|StripAttributes(dparams,targs,["linecolor"])));
 
 					if plotStyle == "errorbar":
 						p1.remove();
@@ -680,19 +696,19 @@ class JPyPlotRatio:
 						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
 						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,ratio_err1d,fmt="s",markerfacecolor=p1.get_facecolor()[0],markeredgecolor="black",linestyle=p1.get_linestyle()[0]);
+						targs = {"x":x1+xshift,"y":ratio1d,"yerr":ratio_err1d,"fmt":"s","markerfacecolor":p1.get_facecolor()[0],"markeredgecolor":"black","linestyle":p1.get_linestyle()[0]};
+						self.ax.flat[a1[panelIndex]].errorbar(**targs);
 					elif plotStyle == "default":
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
-						#for k in ["plotType","skipAutolim","noError","style"]:
-						#	dparams.pop(k,None);
 						if "color" not in dparams and \
 							"linecolor" not in dparams:
 							dparams['color'] = self.plots[robj[0]].kwargs.get("linecolor","black");
 						if "linestyle" not in dparams:
 							dparams['linestyle'] = p1.get_linestyle()[0];
-						#self.ax.flat[a1[panelIndex]].plot(sx,ratio,color=self.plots[robj[0]].kwargs.get("linecolor","black"),linestyle=p1.get_linestyle()[0]);#,**dparams);
-						self.ax.flat[a1[panelIndex]].plot(sx+xshift,ratio,**{k:dparams[k] for k in dparams if k not in ["linecolor","facecolor","edgecolor","scale","noError","xshift"]});
+						targs = {"x":sx+xshift,"y":ratio};
+						self.ax.flat[a1[panelIndex]].plot(**(targs|StripAttributes(targs,dparams,["facecolor","edgecolor"])));
+
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
 
