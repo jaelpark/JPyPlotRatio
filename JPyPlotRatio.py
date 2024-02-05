@@ -221,13 +221,25 @@ class JPyPlotRatio:
 		verts = [(0,0),(0,-5),(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,-5)]; #arrow down, no horizontal bar
 		codes = [Path.MOVETO,Path.LINETO,Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
 		#---
-		self.limitMarkerPath = Path(verts,codes);#.transformed(at.transAxes); #arrow down, no horizontal bar
+		self.limitMarkerPath = Path(verts,codes); #arrow down, no horizontal bar
 		self.limitMarkerPathFull = Path([(-1,0),(1,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
 		self.limitMarkerPathFullInverse = self.limitMarkerPathFull.transformed(Affine2D().rotate(np.pi));
 
-		vertsDashed = [(0,t) for t in np.linspace(-0,-5,10)]+[(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,-5)]; #arrow down, no horizontal bar
+		vertsDashed = [(0,t) for t in np.linspace(-0,-5,10)]+[(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,-5)]; 
 		codesDashed = [[Path.MOVETO,Path.LINETO][i%2] for i in range(0,10)]+[Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
 		self.limitMarkerPathDashed = Path(vertsDashed,codesDashed);
+		self.limitMarkerPathDashedFull = Path([(-1,0),(1,0)]+vertsDashed,[Path.MOVETO,Path.LINETO]+codesDashed);
+
+		vertsDashdot = [(0,0),(0,-2),(0,-2.3),(0,-2.7),(0,-3),(0,-5)]+[(-0.3,-4.5),(0.3,-4.5),(0,-5),(0,-5)];
+		codesDashdot = [[Path.MOVETO,Path.LINETO][i%2] for i in range(0,6)]+[Path.MOVETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY];
+		self.limitMarkerPathDashdot = Path(vertsDashdot,codesDashdot);
+		self.limitMarkerPathDashdotFull = Path([(-1,0),(1,0)]+vertsDashdot,[Path.MOVETO,Path.LINETO]+codesDashdot);
+
+		self.limitMarkerDict = {
+			"--":(self.limitMarkerPathDashed,self.limitMarkerPathDashedFull),"dashed":(self.limitMarkerPathDashed,self.limitMarkerPathDashedFull),
+			"-.":(self.limitMarkerPathDashdot,self.limitMarkerPathDashdotFull),"dashdot":(self.limitMarkerPathDashdot,self.limitMarkerPathDashdotFull),
+			"-":(self.limitMarkerPath,self.limitMarkerPathFull),"none":(self.limitMarkerPath,self.limitMarkerPathFull)
+		};
 
 		verts = [(0,0),(0,-1.5),(-0.3,-1),(0.3,-1),(0,-1.5),(0,0)];
 		#self.limitMarkerLegend = Path([(-0.01,0),(0.01,0)]+verts,[Path.MOVETO,Path.LINETO]+codes);
@@ -527,7 +539,7 @@ class JPyPlotRatio:
 					except KeyError:
 						zxerr = None;
 
-					limitMarker = (self.limitMarkerPathDashed if plot.kwargs.get("linestyle","none") in ["--",":"] else self.limitMarkerPath);
+					limitMarker = self.limitMarkerDict[plot.kwargs.get("linestyle","none")][0];
 					targs = {"x":zx+plot.xshift,"y":zy+zyerr,"yerr":None,"xerr":zxerr,"zorder":2,"marker":limitMarker if "xerr" in plot.kwargs else self.limitMarkerPathFull,"markersize":50,"fillstyle":"full","linestyle":"none"};
 					at.errorbar(**(targs|StripAttributes(plot.kwargs,targs)));
 					x,y,yerr = x[ll],y[ll],yerr[ll];
@@ -548,7 +560,8 @@ class JPyPlotRatio:
 					ll = ~plot.limitMask;
 					zx,zy,zyerr = x[~ll],y[~ll],yerr[~ll];
 					limitToZeroMasks[plotIndex] = ll;
-					targs = {"x":zx+plot.xshift,"y":zy+zyerr,"yerr":None,"xerr":None,"zorder":2,"marker":self.limitMarkerPathFull,"markersize":50,"fillstyle":"full","linestyle":"none"};
+					limitMarker = self.limitMarkerDict[plot.kwargs.get("linestyle","none")][1];
+					targs = {"x":zx+plot.xshift,"y":zy+zyerr,"yerr":None,"xerr":None,"zorder":2,"marker":limitMarker,"markersize":50,"fillstyle":"full","linestyle":"none"};
 					at.errorbar(**(targs|StripAttributes(plot.kwargs,targs,["fmt","mfc"])));
 					x,y,yerr = x[ll],y[ll],yerr[ll];
 				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,zorder=plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
