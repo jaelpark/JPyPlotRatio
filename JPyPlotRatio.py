@@ -141,7 +141,7 @@ def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kw
 	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 def StripAttributes(d, fixed, extras=[]):
-	return {k:d[k] for k in d if (k not in fixed and k not in ["xshift","scale","skipAutolim","limitMask","noError","style","xerrLinestyle","yerrLinestyle"] and k not in extras)};
+	return {k:d[k] for k in d if (k not in fixed and k not in ["xshift","scale","skipAutolim","limitMask","noError","style","callback"] and k not in extras)};
 
 class JPyPlotRatio:
 	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
@@ -542,13 +542,16 @@ class JPyPlotRatio:
 					limitMarker = self.limitMarkerDict[plot.kwargs.get("linestyle","none")][0];
 					targs = {"x":zx+plot.xshift,"y":zy+zyerr,"yerr":None,"xerr":zxerr,"zorder":2,"marker":limitMarker if "xerr" in plot.kwargs else self.limitMarkerPathFull,"markersize":50,"fillstyle":"full","linestyle":"none"};
 					at.errorbar(**(targs|StripAttributes(plot.kwargs,targs)));
+					if "callback" in plot.kwargs:
+						plot.kwargs["callback"](pr);
 					x,y,yerr = x[ll],y[ll],yerr[ll];
 
 				targs = {"x":x+plot.xshift,"y":y,"yerr":yerr,"xerr":xerr,"zorder":2*len(self.plots)+plotIndex};
 				pr = at.errorbar(**(targs|StripAttributes(plot.kwargs,targs)));
-				#pr[-1][0].set_linestyle(":");
-				if "yerrLinestyle" in plot.kwargs:
-					pr[-1][-1].set_linestyle(plot.kwargs["yerrLinestyle"]);
+				if "callback" in plot.kwargs:
+					plot.kwargs["callback"](pr);
+				#for cap in pr[1][2:]:
+				#	cap.remove();
 				if plot.label != "":
 					if self.systLegend and any((sys[0] == plotIndex for sys in self.systs)):
 						labels[labelWithScale(plot.label),plot.labelLegendId,plot.labelOrder] = (patches.Patch(facecolor=plot.kwargs["color"],edgecolor="black",alpha=0.25),pr[0]);
@@ -562,7 +565,9 @@ class JPyPlotRatio:
 					limitToZeroMasks[plotIndex] = ll;
 					limitMarker = self.limitMarkerDict[plot.kwargs.get("linestyle","none")][1];
 					targs = {"x":zx+plot.xshift,"y":zy+zyerr,"yerr":None,"xerr":None,"zorder":2,"marker":limitMarker,"markersize":50,"fillstyle":"full","linestyle":"none"};
-					at.errorbar(**(targs|StripAttributes(plot.kwargs,targs,["fmt","mfc"])));
+					pr = at.errorbar(**(targs|StripAttributes(plot.kwargs,targs,["fmt","mfc"])));
+					if "callback" in plot.kwargs:
+						plot.kwargs["callback"](pr);
 					x,y,yerr = x[ll],y[ll],yerr[ll];
 				p1 = self.ax.flat[a0[plot.panelIndex]].fill_between(x+plot.xshift,y-yerr,y+yerr,zorder=plotIndex,**{k:plot.kwargs[k] for k in plot.kwargs if k not in ["linecolor","skipAutolim","noError","scale"]});
 				pr = (p1,
