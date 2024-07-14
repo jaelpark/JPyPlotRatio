@@ -144,7 +144,8 @@ def StripAttributes(d, fixed, extras=[]):
 	return {k:d[k] for k in d if (k not in fixed and k not in ["xshift","scale","skipAutolim","limitMask","noError","style","callback"] and k not in extras)};
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, colLabelLoc=0.05, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), 
+				panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, ticksLength=(8.0,2.8), majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, colLabelLoc=0.05, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -180,6 +181,7 @@ class JPyPlotRatio:
 		self.systLegend = systLegend;
 		self.axisLabelSize = axisLabelSize;
 		self.tickLabelSize = tickLabelSize;
+		self.ticksLength = ticksLength;
 		self.majorTicks = majorTicks;
 		self.majorTickMultiple = majorTickMultiple;
 		self.logScale = logScale;
@@ -315,8 +317,8 @@ class JPyPlotRatio:
 			pass;
 
 		for A in self.ax.flat:
-			A.tick_params(which="major",direction="in",length=8.0);
-			A.tick_params(which="minor",direction="in",length=2.8);
+			A.tick_params(which="major",direction="in",length=ticksLength[0]);
+			A.tick_params(which="minor",direction="in",length=ticksLength[1]);
 			if self.majorTickMultiple:
 				A.xaxis.set_major_locator(plticker.MultipleLocator(10.0));
 			else:
