@@ -144,7 +144,7 @@ def StripAttributes(d, fixed, extras=[]):
 	return {k:d[k] for k in d if (k not in fixed and k not in ["xshift","scale","skipAutolim","limitMask","noError","style","callback"] and k not in extras)};
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, colLabelLoc=0.05, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -261,7 +261,7 @@ class JPyPlotRatio:
 		try:
 			if isinstance(kwargs['xlabel'],str):
 				if sharedColLabels:
-					self.p.text(0.5,0.05,kwargs['xlabel'],size=self.axisLabelSize,horizontalalignment="center");
+					self.p.text(0.5,colLabelLoc,kwargs['xlabel'],size=self.axisLabelSize,horizontalalignment="center");
 				else:
 					for a in self.ax[-1,1:]:
 						a.set_xlabel(kwargs['xlabel'],fontsize=self.axisLabelSize);
