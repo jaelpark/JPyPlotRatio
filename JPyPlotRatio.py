@@ -696,11 +696,8 @@ class JPyPlotRatio:
 
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
-						#for k in ["scale","skipAutolim","noError","style","xlim","xshift","xerr"]:
-						#	dparams.pop(k,None);
-						#self.ax.flat[a1[panelIndex]].errorbar(x1+xshift,ratio1d,ratio_err1d,**dparams);#**self.plots[robj[0]].kwargs);
 						targs = {"x":x1+xshift,"y":ratio1d,"yerr":ratio_err1d};
-						self.ax.flat[a1[panelIndex]].errorbar(**(targs|StripAttributes(targs,dparams)));
+						self.ax.flat[a1[panelIndex]].errorbar(**(targs|StripAttributes(dparams,targs)));
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
@@ -709,7 +706,6 @@ class JPyPlotRatio:
 					dparams.update({k:robj[2][k] for k in robj[2]});
 					targs = {"x":sx+xshift,"y1":ratio-ratio_err,"y2":ratio+ratio_err};
 					p1 = self.ax.flat[a1[panelIndex]].fill_between(**(targs|StripAttributes(dparams,targs,["linecolor"])));
-
 					if plotStyle == "errorbar":
 						p1.remove();
 
