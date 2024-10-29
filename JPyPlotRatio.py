@@ -150,6 +150,10 @@ class JPyPlotRatio:
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
 			raise ValueError("disableRatio: one or more indices exceeds the number of rows ({})".format(panels[0]));
+		if isinstance(legendPanel,dict) and not isinstance(legendLoc,dict):
+			raise TypeError("legendLoc must be a dictionary (one position for each legend) when legendPanel is dictionary (multiple legends)");
+		if isinstance(legendLoc,dict) and not isinstance(legendPanel,dict):
+			legendLoc = legendLoc[0]; #attempt to take the first position in the dictionary
 		height_ratios = np.delete(np.array(panels[0]*[layoutRatio,1-layoutRatio]),2*disableRatio+1);
 		self.p,self.ax = plt.subplots(2*panels[0]-disableRatio.size,panels[1]+1,sharex=sharex,figsize=(panels[1]*panelsize[0],np.sum(height_ratios)*panelsize[1]),gridspec_kw={'width_ratios':[0.0]+panels[1]*[1.0],'height_ratios':height_ratios});
 		self.p.subplots_adjust(wspace=0.0,hspace=0.0);
@@ -722,8 +726,8 @@ class JPyPlotRatio:
 							dparams['color'] = self.plots[robj[0]].kwargs.get("linecolor","black");
 						if "linestyle" not in dparams:
 							dparams['linestyle'] = p1.get_linestyle()[0];
-						targs = {"x":sx+xshift,"y":ratio};
-						self.ax.flat[a1[panelIndex]].plot(**(targs|StripAttributes(targs,dparams,["facecolor","edgecolor"])));
+						targs = {};
+						self.ax.flat[a1[panelIndex]].plot(sx+xshift,ratio,**(targs|StripAttributes(dparams,targs,["facecolor","edgecolor","linecolor"])));
 
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' or 'errorbar' when plotType is 'theory'.".format(plotStyle));
