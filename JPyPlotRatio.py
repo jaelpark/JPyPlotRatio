@@ -89,17 +89,23 @@ def TH2ToNumpy(h):
 def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 	x1,y1,yerr1 = a1;
 	x2,y2,yerr2 = a2;
+	m1 = ~np.isnan(y1);
+	m2 = ~np.isnan(y2);
+	x1,y1,yerr1 = x1[m1],y1[m1],yerr1[m1];
+	x2,y2,yerr2 = x2[m2],y2[m2],yerr2[m2];
 
-	#sa = np.max(np.array([x1[0],x2[0]]));
-	#sb = np.min(np.array([x1[-1],x2[-1]]));
-	sa = np.max(np.array([np.min(x1),np.min(x2)]));
-	sb = np.min(np.array([np.max(x1),np.max(x2)]));
-	sx = np.linspace(sa,sb,freq*max(x1.size,x2.size));
+	try:
+		sa = np.max(np.array([np.min(x1),np.min(x2)]));
+		sb = np.min(np.array([np.max(x1),np.max(x2)]));
+		sx = np.linspace(sa,sb,freq*max(x1.size,x2.size));
 
-	y1d = interpolate.interp1d(x1,y1)(sx);
-	yerr1d = interpolate.interp1d(x1,yerr1)(sx);
-	y2d = interpolate.interp1d(x2,y2)(sx);
-	yerr2d = interpolate.interp1d(x2,yerr2)(sx);
+		y1d = interpolate.interp1d(x1,y1)(sx);
+		yerr1d = interpolate.interp1d(x1,yerr1)(sx);
+		y2d = interpolate.interp1d(x2,y2)(sx);
+		yerr2d = interpolate.interp1d(x2,yerr2)(sx);
+	except ValueError:
+		print("WARNING: unable to calculate ratio.");
+		return np.array([]),np.array([]),np.array([])
 
 	if mode == "ratio":
 		ratio = y1d/y2d;
@@ -138,7 +144,7 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 
 def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kwargs):
 	h = 0.5*s;
-	return [patches.Rectangle((x[j]-h,y[j]-0.5*yerr[j]),s,yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
+	return [patches.Rectangle((x[j]-h[j],y[j]-0.5*yerr[j]),s[j],yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 def StripAttributes(d, fixed, extras=[]):
 	return {k:d[k] for k in d if (k not in fixed and k not in ["xshift","scale","skipAutolim","limitMask","noError","style","callback"] and k not in extras)};
@@ -695,13 +701,16 @@ class JPyPlotRatio:
 			if not np.ma.is_masked(a1[panelIndex]):
 				if self.plots[robj[0]].plotType in ["data","upperLimit","hidden"]:
 					if plotStyle == "default":
-						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False)(x1);
-						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False)(x1);
+						try:
+							ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False)(x1);
+							ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False)(x1);
 
-						dparams = self.plots[robj[0]].kwargs.copy();
-						dparams.update({k:robj[2][k] for k in robj[2]});
-						targs = {"x":x1+xshift,"y":ratio1d,"yerr":ratio_err1d};
-						self.ax.flat[a1[panelIndex]].errorbar(**(targs|StripAttributes(dparams,targs)));
+							dparams = self.plots[robj[0]].kwargs.copy();
+							dparams.update({k:robj[2][k] for k in robj[2]});
+							targs = {"x":x1+xshift,"y":ratio1d,"yerr":ratio_err1d};
+							self.ax.flat[a1[panelIndex]].errorbar(**(targs|StripAttributes(dparams,targs)));
+						except ValueError:
+							pass;
 					else:
 						raise ValueError("Invalid plotStyle specified '{}'. plotStyle must be 'default' when plotType is 'data'.".format(plotStyle));
 
@@ -713,11 +722,14 @@ class JPyPlotRatio:
 					if plotStyle == "errorbar":
 						p1.remove();
 
-						ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
-						ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
+						try:
+							ratio1d = interpolate.interp1d(sx,ratio,bounds_error=False,fill_value="extrapolate")(x1);
+							ratio_err1d = interpolate.interp1d(sx,ratio_err,bounds_error=False,fill_value="extrapolate")(x1);
 
-						targs = {"x":x1+xshift,"y":ratio1d,"yerr":ratio_err1d,"fmt":"s","markerfacecolor":p1.get_facecolor()[0],"markeredgecolor":"black","linestyle":p1.get_linestyle()[0]};
-						self.ax.flat[a1[panelIndex]].errorbar(**targs);
+							targs = {"x":x1+xshift,"y":ratio1d,"yerr":ratio_err1d,"fmt":"s","markerfacecolor":p1.get_facecolor()[0],"markeredgecolor":"black","linestyle":p1.get_linestyle()[0]};
+							self.ax.flat[a1[panelIndex]].errorbar(**targs);
+						except ValueError:
+							pass;
 					elif plotStyle == "default":
 						dparams = self.plots[robj[0]].kwargs.copy();
 						dparams.update({k:robj[2][k] for k in robj[2]});
@@ -743,7 +755,12 @@ class JPyPlotRatio:
 
 			ax = self.ax.flat[a0[panelIndex]];
 			xlim = ax.get_xlim();
-			patchWidth = self.systPatchWidth*(xlim[1]-xlim[0]);
+			try:
+				xerr = self.plots[sys[0]].kwargs["xerr"];
+				patchWidth = 2*np.array(xerr)+0.1*self.systPatchWidth*(xlim[1]-xlim[0]);
+				print(type(patchWidth));
+			except KeyError:
+				patchWidth = np.full(x1.size,self.systPatchWidth*(xlim[1]-xlim[0]));
 			syst = (scale*sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
 			for i,patch in enumerate(SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25,zorder=len(self.plots)+sys[0])):
 				if limitToZeroMasks.get(sys[0],np.full(yerr1.size,True))[i]:
