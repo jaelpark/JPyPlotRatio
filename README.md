@@ -71,6 +71,8 @@ axisLabelSize | int | Axis label text size. Default 16
 tickLabelSize | int | Tick labe size. Default 13
 majorTicks | int | Maximum number of major ticks on the x-axis. Default 6
 majorTickMultiple | int | Multiples of the major ticks. By default not used (None).
+setYTickers | bool | Enable custom y-axis tick formatting with MaxNLocator. Default False.
+yPrec | int | Number of decimal places for y-axis tick labels when setYTickers is enabled. Default 2.
 logScale | bool | Apply logarithmic scale to each panel.
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
