@@ -142,16 +142,23 @@ def RatioSamples(a1, a2, mode="ratio", freq=10, ratioRange=(-np.inf,np.inf)):
 
 	return sx,ratio,ratio_err;
 
-def SystematicsPatches(x, y, yerr, s, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kwargs):
+def SystematicsPatches(x, y, yerr, s, systLog=False, fc="#FF9848", ec="#CC4F1B", alpha=0.5,**kwargs):
 	h = 0.5*s;
-	return [patches.Rectangle((x[j]-h[j],y[j]-0.5*yerr[j]),s[j],yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
+	# Check if logarithmic x-axis for systematics
+	if systLog:
+		left=x/np.sqrt(0.06*s)
+		width=x*np.sqrt(0.06*s)-left
+	else:
+		left=x-0.5*s
+		width=[s for i in range(x.size)]
+	return [patches.Rectangle((left[j],y[j]-0.5*yerr[j]),width[j],yerr[j],facecolor=fc,edgecolor=ec,alpha=alpha,linewidth=0.5,**kwargs) for j in range(x.size)];
 
 def StripAttributes(d, fixed, extras=[]):
 	return {k:d[k] for k in d if (k not in fixed and k not in ["xshift","scale","skipAutolim","limitMask","noError","style","callback"] and k not in extras)};
 
 class JPyPlotRatio:
-	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, panelLabel={}, panelLabelLoc=(0.2,0.92), 
-				panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, ticksLength=(8.0,2.8), majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, colLabelLoc=0.05, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', **kwargs):
+	def __init__(self, panels=(1,1), panelsize=(3,3.375), layoutRatio=0.7, disableRatio=[], rowBounds={}, rowBoundsMax={}, colBounds={}, ratioBounds={}, ratioIndicator=True, ratioType="ratio", ratioSystPlot=False, systLegend=True, panelScaling={}, panelPrivateScale=[], panelScaleLoc=(0.92,0.92), panelPrivateRowBounds={}, panelRatioPrivateScale={}, panelRatioPrivateRowBounds={}, systPatchWidth=0.065, systLog=False, panelLabel={}, panelLabelLoc=(0.2,0.92), 
+				panelLabelSize=12, panelLabelAlign="right", axisLabelSize=12, tickLabelSize=12, ticksLength=(8.0,2.8), majorTicks=6, majorTickMultiple=None, logScale=False, sharedColLabels=False, colLabelLoc=0.05, hideLegends=False, legendPanel=0, legendLoc=(0.52,0.28), legendLabelSpacing=matplotlib.rcParams['legend.labelspacing'], legendSize=12, sharex='col', setYTickers=False, yPrec=2, **kwargs):
 		disableRatio = list(set(disableRatio));
 		disableRatio = np.array(disableRatio,dtype=np.int32);
 		if np.any(disableRatio >= panels[0]):
@@ -178,6 +185,7 @@ class JPyPlotRatio:
 		self.panelRatioPrivateScale = panelRatioPrivateScale;
 		self.panelRatioPrivateRowBounds = panelRatioPrivateRowBounds;
 		self.systPatchWidth = systPatchWidth;
+		self.systLog = systLog
 		self.panelLabel = panelLabel;
 		self.panelLabelLoc = panelLabelLoc;
 		self.panelLabelSize = panelLabelSize;
@@ -200,6 +208,9 @@ class JPyPlotRatio:
 		self.legendLoc = legendLoc;
 		self.legendLabelSpacing = legendLabelSpacing;
 		self.legendSize = legendSize;
+
+		self.setYTickers = setYTickers;
+		self.yPrec = yPrec;
 
 		self.ax = np.atleast_2d(self.ax);
 		self.s = np.shape(self.ax);
@@ -332,8 +343,12 @@ class JPyPlotRatio:
 			if self.majorTickMultiple:
 				A.xaxis.set_major_locator(plticker.MultipleLocator(10.0));
 			else:
-				#A.xaxis.set_major_locator(plticker.AutoLocator());
 				A.xaxis.set_major_locator(plticker.MaxNLocator(self.majorTicks));
+			if self.setYTickers:
+				A.yaxis.set_major_locator(plticker.MaxNLocator(self.majorTicks));
+				# A.yaxis.set_major_locator(plticker.AutoLocator());
+				form = f'{{x:.{self.yPrec}f}}'
+				A.yaxis.set_major_formatter(plticker.StrMethodFormatter(form));
 			A.xaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			A.yaxis.set_minor_locator(plticker.AutoMinorLocator(5));
 			#FIXME - minor ticks disappear with log scale
@@ -735,7 +750,7 @@ class JPyPlotRatio:
 						dparams.update({k:robj[2][k] for k in robj[2]});
 						if "color" not in dparams and \
 							"linecolor" not in dparams:
-							dparams['color'] = self.plots[robj[0]].kwargs.get("linecolor","black");
+							dparams['color'] = self.plots[robj[0]].kwargs.get("color","black");
 						if "linestyle" not in dparams:
 							dparams['linestyle'] = p1.get_linestyle()[0];
 						targs = {};
@@ -762,7 +777,7 @@ class JPyPlotRatio:
 			except KeyError:
 				patchWidth = np.full(x1.size,self.systPatchWidth*(xlim[1]-xlim[0]));
 			syst = (scale*sys[1] if isinstance(sys[1],np.ndarray) else sys[1]*y1);
-			for i,patch in enumerate(SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25,zorder=len(self.plots)+sys[0])):
+			for i,patch in enumerate(SystematicsPatches(x1+xshift,y1+sys[2],2*syst,patchWidth, self.systLog,fc=self.plots[sys[0]].kwargs["color"],ec="black",alpha=0.25,zorder=len(self.plots)+sys[0])):
 				if limitToZeroMasks.get(sys[0],np.full(yerr1.size,True))[i]:
 					ax.add_patch(patch);
 
