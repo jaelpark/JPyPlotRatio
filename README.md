@@ -62,6 +62,7 @@ panelPrivateRowBounds | Dict `{panelIndex:(ymin,ymax),...}` | Dictionary of y-li
 panelRatioPrivateScale | list `[panelIndex1,panelIndex2,...]` | List of panels ratios that should have their own y-axis instead of a shared one
 panelRatioPrivateRowBounds | Dict `{panelIndex:(ymin,ymax),...}` | Dictionary of y-limits for each panel ratio included in `panelPrivateScale`
 systPatchWidth | float | Fractional width of the systematic uncertainty patches with relation to the panel width. Default 0.065.
+systLog | bool | Adjust systematic uncertainty patch positioning for logarithmic x-axis scaling. Default False.
 xlabel | str or Dict `{colId:str, ...}` | xlabel for all panels (str), or dictionary of xlabels for each column
 ylabel | str or Dict `{rowN:str, ...}` | ylabel for all panels
 ylabelRight | str or Dict `{rowN:str, ...}` | ylabel for all panels on the right side
@@ -70,6 +71,8 @@ axisLabelSize | int | Axis label text size. Default 16
 tickLabelSize | int | Tick labe size. Default 13
 majorTicks | int | Maximum number of major ticks on the x-axis. Default 6
 majorTickMultiple | int | Multiples of the major ticks. By default not used (None).
+setYTickers | bool | Enable custom y-axis tick formatting with MaxNLocator. Default False.
+yPrec | int | Number of decimal places for y-axis tick labels when setYTickers is enabled. Default 2.
 logScale | bool | Apply logarithmic scale to each panel.
 panelLabel | Dict `{panelIndex:label(str), ...}` | Dictionary of panel labels
 panelLabelLoc | Tuple (x, y) | Location for the panel labels in each panel. Default `(0.2,0.92)`
