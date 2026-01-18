@@ -50,7 +50,7 @@ layoutRatio | float | Relative proportions between the plot panel and ratio pane
 disableRatio | list `[rowN1,rowN2,...]` | Row indices for which ratio plot won't be shown 
 rowBounds | Dict `{rowN:(ymin,ymax), ...}` or tuple | Dictionary of y-limits for each row. If tuple, apply common to each row.
 rowBoundsMax | Dict `{rowN:(ymin,ymax), ...}` or tuple | Dictionary of minimum and maximum y-limits for each row - applied if plot point exceeds these limits. Ignored for a row if `rowBounds` has a setting for it. If tuple, apply common to each row.
-colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column
+colBounds | Dict `{colN:(xmin,xmax), ...}` | Dictionary of x-limits for each column. Only one side of the limit can be set by specifying `-np.inf` or `np.inf` (left and right side, respectively) for which auto adjustment is desired.
 ratioBounds | Dict `{rowN:(ymin,ymax), ...}` | Dictionary of y-limits for the ratio panels in each row
 ratioIndicator | bool | If True, a dashed line will be drawn to indicate a zero difference line
 ratioType | str | Ratio panel approach: "ratio": (a/b) with error propagation, "diff": (a-b) with error propagation, "sigma": |a-b|/sigma, "direct": (a/b) with error (Da/Db), "ratio_err": (Da/Db), "ratio_rel_error": (Da*b)/(Db*a)

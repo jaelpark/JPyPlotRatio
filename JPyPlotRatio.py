@@ -271,10 +271,25 @@ class JPyPlotRatio:
 		for i,a in enumerate(self.ax[0,1:]):
 			a.xaxis.set_ticks_position('both');
 			try:
+				def setlim(t):
+					nonlocal a;
+					if np.isinf(t[0]):
+						a.set_xlim(right=t[1]);
+					elif np.isinf(t[1]):
+						a.set_xlim(left=t[0]);
+					else:
+						a.set_xlim(t);
 				if isinstance(colBounds,dict) or isinstance(colBounds,list):
-					a.set_xlim(colBounds[i]);
+					#if np.isinf(colBounds[0]):
+					#	a.set_xlim(right=colBounds[1]);
+					#elif np.isinf(colBounds[1]):
+					#	a.set_xlim(left=colBounds[0]);
+					#else:
+					#	a.set_xlim(colBounds[i]);
+					setlim(colBounds[i]);
 				else:
-					a.set_xlim(colBounds); #tuple
+					#a.set_xlim(colBounds); #tuple
+					setlim(colBounds); #tuple
 			except KeyError:
 				pass;
 
